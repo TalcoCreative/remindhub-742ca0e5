@@ -18,15 +18,16 @@ import { statusLabels, statusColors, quickReplies, type LeadStatus } from '@/dat
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Tables } from '@/integrations/supabase/types';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 
 type DbChat = Tables<'chats'>;
 type DbMessage = Tables<'messages'>;
 
-const picList = ['Andi', 'Budi', 'Citra', 'Dewi', 'Eko'];
 const statusOptions: LeadStatus[] = ['new', 'not_followed_up', 'followed_up', 'in_progress', 'picked_up', 'sign_contract', 'completed', 'lost'];
 
 export default function WhatsAppInbox() {
   const qc = useQueryClient();
+  const { data: picList = [] } = useTeamMembers();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [reply, setReply] = useState('');

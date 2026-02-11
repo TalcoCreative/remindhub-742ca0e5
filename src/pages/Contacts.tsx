@@ -18,14 +18,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 
-const picList = ['Andi', 'Budi', 'Citra', 'Dewi', 'Eko'];
 const sourceOptions = ['whatsapp', 'web', 'instagram', 'referral', 'campaign', 'partner', 'manual', 'tiktok', 'event', 'friend', 'csv'];
 
 export default function Contacts() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: picList = [] } = useTeamMembers();
 
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);

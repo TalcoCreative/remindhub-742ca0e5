@@ -22,7 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const picList = ['Andi', 'Budi', 'Citra', 'Dewi', 'Eko'];
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+
 const sourceOptions = ['whatsapp', 'web', 'instagram', 'referral', 'campaign', 'partner', 'manual', 'tiktok', 'event', 'friend'];
 const statusOptions: LeadStatus[] = ['new', 'not_followed_up', 'followed_up', 'in_progress', 'picked_up', 'sign_contract', 'completed', 'lost'];
 const templateVars = ['{{name}}', '{{company}}', '{{area}}', '{{status}}', '{{last_pickup_date}}'];
@@ -30,6 +31,7 @@ const templateVars = ['{{name}}', '{{company}}', '{{area}}', '{{status}}', '{{la
 export default function Broadcast() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { data: picList = [] } = useTeamMembers();
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSource, setFilterSource] = useState('all');

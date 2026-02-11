@@ -12,6 +12,7 @@ import { useUpdateLead, useLeadAuditLog, type DbLead, type DbLeadUpdate } from '
 import { statusLabels, sourceLabels } from '@/data/dummy';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, History, Save } from 'lucide-react';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import type { Database } from '@/integrations/supabase/types';
 
 type LeadSource = Database['public']['Enums']['lead_source'];
@@ -27,6 +28,7 @@ interface Props {
 export default function LeadEditDialog({ lead, open, onClose }: Props) {
   const { toast } = useToast();
   const updateLead = useUpdateLead();
+  const { data: picList = [] } = useTeamMembers();
   const { data: auditLog } = useLeadAuditLog(lead?.id);
   const [form, setForm] = useState<Record<string, unknown>>({});
 
@@ -144,7 +146,14 @@ export default function LeadEditDialog({ lead, open, onClose }: Props) {
                 </div>
                 <div className="space-y-1">
                   <Label>Assigned PIC</Label>
-                  <Input value={String(form.assigned_pic ?? '')} onChange={(e) => set('assigned_pic', e.target.value)} />
+                  <Select value={String(form.assigned_pic ?? '')} onValueChange={(v) => set('assigned_pic', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select PIC" /></SelectTrigger>
+                    <SelectContent>
+                      {picList.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label>Next Follow Up</Label>
