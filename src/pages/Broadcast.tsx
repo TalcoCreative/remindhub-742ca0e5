@@ -129,10 +129,10 @@ export default function Broadcast() {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-4 p-4 lg:p-6">
+    <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 lg:p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Broadcast WhatsApp</h1>
-        <p className="text-sm text-muted-foreground">Send targeted messages to filtered leads (Dummy Mode)</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Broadcast</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Send targeted messages (Dummy Mode)</p>
       </div>
 
       <Tabs defaultValue="compose">

@@ -77,46 +77,48 @@ export default function Leads() {
   }
 
   return (
-    <div className="space-y-4 p-4 lg:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} leads found</p>
+    <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 lg:p-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Leads</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">{filtered.length} leads</p>
         </div>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={exportCSV}>
-          <Download className="h-4 w-4" /> Export CSV
+        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
+          <Download className="h-4 w-4" /> <span className="hidden sm:inline">Export</span> CSV
         </Button>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-3">
-          <div className="relative flex-1 min-w-[200px]">
+        <CardContent className="flex flex-wrap items-center gap-2 sm:gap-3 p-2 sm:p-3">
+          <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Search name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 sm:h-9 text-sm" />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {Object.entries(statusLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-            </SelectContent>
-          </Select>
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Source" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              {Object.entries(sourceLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-            </SelectContent>
-          </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[120px]"><SelectValue placeholder="Type" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="b2c">B2C</SelectItem>
-              <SelectItem value="b2b">B2B</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[110px] sm:w-[160px] h-8 text-xs sm:text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {Object.entries(statusLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
+              </SelectContent>
+            </Select>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[100px] sm:w-[140px] h-8 text-xs sm:text-sm"><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                {Object.entries(sourceLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[90px] sm:w-[120px] h-8 text-xs sm:text-sm"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="b2c">B2C</SelectItem>
+                <SelectItem value="b2b">B2B</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

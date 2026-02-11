@@ -26,14 +26,14 @@ function StatCard({ title, value, subtitle, icon: Icon }: {
 }) {
   return (
     <Card>
-      <CardContent className="flex items-start gap-4 p-5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
+      <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
+        <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="mt-0.5 text-2xl font-bold tracking-tight">{value}</p>
-          {subtitle && <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><ArrowUpRight className="h-3 w-3 text-success" />{subtitle}</p>}
+          <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
+          <p className="mt-0.5 text-lg sm:text-2xl font-bold tracking-tight">{value}</p>
+          {subtitle && <p className="mt-0.5 flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground"><ArrowUpRight className="h-3 w-3 text-success" />{subtitle}</p>}
         </div>
       </CardContent>
     </Card>
@@ -109,33 +109,33 @@ export default function Dashboard() {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Today's overview — {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Today — {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</p>
         </div>
         <Link to="/dashboard-detail">
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Eye className="h-4 w-4" /> Detail & Charts
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
+            <Eye className="h-4 w-4" /> <span className="hidden sm:inline">Detail & Charts</span><span className="sm:hidden">Detail</span>
           </Button>
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard title="Today's Leads" value={todayLeads.length} icon={Users} />
-        <StatCard title="Total KG (Today)" value={`${stats.totalKg.toLocaleString()} kg`} subtitle={`B2C: ${stats.b2cKg.toLocaleString()} · B2B: ${stats.b2bKg.toLocaleString()}`} icon={Recycle} />
-        <StatCard title="Est. Revenue (Today)" value={`Rp ${(stats.revenue / 1e6).toFixed(1)}M`} icon={DollarSign} />
+        <StatCard title="Total KG" value={`${stats.totalKg.toLocaleString()} kg`} subtitle={`B2C: ${stats.b2cKg.toLocaleString()} · B2B: ${stats.b2bKg.toLocaleString()}`} icon={Recycle} />
+        <StatCard title="Est. Revenue" value={`Rp ${(stats.revenue / 1e6).toFixed(1)}M`} icon={DollarSign} />
       </div>
 
       {/* Chat Response Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Answered Chats" value={stats.answered} icon={CheckCircle2} />
-        <StatCard title="Unanswered Chats" value={stats.unanswered} icon={MessageCircle} />
-        <StatCard title="Avg Response Time" value={formatDuration(stats.avgResponseMs)} subtitle="All chats · first reply" icon={Clock} />
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-3">
+        <StatCard title="Answered" value={stats.answered} icon={CheckCircle2} />
+        <StatCard title="Unanswered" value={stats.unanswered} icon={MessageCircle} />
+        <StatCard title="Avg Response" value={formatDuration(stats.avgResponseMs)} subtitle="first reply" icon={Clock} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Funnel */}
         <Card>
           <CardHeader className="pb-3">

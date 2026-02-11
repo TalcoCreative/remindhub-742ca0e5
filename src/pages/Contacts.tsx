@@ -302,20 +302,20 @@ export default function Contacts() {
 
       {/* Search + Filters */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 sm:h-9 text-sm" />
           </div>
-          <Button variant={hasActiveFilter ? 'default' : 'outline'} size="sm" className="gap-1.5" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4" /> Filters
+          <Button variant={hasActiveFilter ? 'default' : 'outline'} size="sm" className="gap-1 text-xs" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Filters</span>
           </Button>
           {hasActiveFilter && (
-            <Button variant="ghost" size="sm" onClick={() => { setFilterType('all'); setFilterSource('all'); setFilterContacted('all'); setFilterPic('all'); setFilterArea('all'); }}>
-              <X className="h-4 w-4 mr-1" /> Reset
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setFilterType('all'); setFilterSource('all'); setFilterContacted('all'); setFilterPic('all'); setFilterArea('all'); }}>
+              <X className="h-3.5 w-3.5" />
             </Button>
           )}
-          <Badge variant="secondary">{filteredContacts.length} contacts</Badge>
+          <Badge variant="secondary" className="text-[10px] sm:text-xs">{filteredContacts.length}</Badge>
         </div>
 
         {showFilters && (
@@ -352,37 +352,40 @@ export default function Contacts() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card border-b border-border">
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('name')}><span className="flex items-center">Name<SortIcon col="name" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('phone')}><span className="flex items-center">Phone<SortIcon col="phone" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('type')}><span className="flex items-center">Type<SortIcon col="type" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('source')}><span className="flex items-center">Source<SortIcon col="source" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('area')}><span className="flex items-center">Area<SortIcon col="area" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('assigned_pic')}><span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span></th>
-                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('chat_id')}><span className="flex items-center">Contacted?<SortIcon col="chat_id" /></span></th>
-                  <th className="px-3 py-2 text-right">Actions</th>
+                <tr className="text-left text-[10px] sm:text-xs text-muted-foreground">
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('name')}><span className="flex items-center">Name<SortIcon col="name" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden sm:table-cell" onClick={() => toggleSort('phone')}><span className="flex items-center">Phone<SortIcon col="phone" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort('type')}><span className="flex items-center">Type<SortIcon col="type" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('source')}><span className="flex items-center">Source<SortIcon col="source" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden lg:table-cell" onClick={() => toggleSort('area')}><span className="flex items-center">Area<SortIcon col="area" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden lg:table-cell" onClick={() => toggleSort('assigned_pic')}><span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('chat_id')}><span className="flex items-center"><span className="hidden sm:inline">Contacted?</span><span className="sm:hidden">Chat</span><SortIcon col="chat_id" /></span></th>
+                  <th className="px-2 sm:px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
               {filteredContacts.map((c) => {
                   return (
-                    <tr key={c.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                      <td className="px-3 py-2 font-medium">{c.name}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{c.phone}</td>
-                      <td className="px-3 py-2"><Badge variant="outline" className="text-[10px]">{c.type?.toUpperCase()}</Badge></td>
-                      <td className="px-3 py-2 capitalize text-muted-foreground">{c.source}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{c.area || '—'}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{c.assigned_pic || '—'}</td>
-                      <td className="px-3 py-2">
+                    <tr key={c.id} className="border-b border-border hover:bg-muted/50 transition-colors text-xs sm:text-sm">
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
+                        <p className="font-medium truncate max-w-[120px] sm:max-w-none">{c.name}</p>
+                        <p className="text-[10px] text-muted-foreground sm:hidden">{c.phone}</p>
+                      </td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden sm:table-cell">{c.phone}</td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{c.type?.toUpperCase()}</Badge></td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 capitalize text-muted-foreground">{c.source}</td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden lg:table-cell">{c.area || '—'}</td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden lg:table-cell">{c.assigned_pic || '—'}</td>
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
                         {c.chat_id
-                          ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3.5 w-3.5" /> Yes</span>
-                          : <span className="flex items-center gap-1 text-xs text-warning"><XCircle className="h-3.5 w-3.5" /> No</span>
+                          ? <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-success"><CheckCircle2 className="h-3 w-3" /> <span className="hidden sm:inline">Yes</span></span>
+                          : <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-warning"><XCircle className="h-3 w-3" /> <span className="hidden sm:inline">No</span></span>
                         }
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="default" size="sm" className="h-6 text-[10px] gap-1 px-2" onClick={() => contactNow(c)}>
-                              <MessageCircle className="h-3 w-3" /> Contact Now
+                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
+                        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                          <Button variant="default" size="sm" className="h-6 text-[10px] gap-0.5 px-1.5 sm:px-2" onClick={() => contactNow(c)}>
+                              <MessageCircle className="h-3 w-3" /> <span className="hidden sm:inline">Contact</span>
                           </Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditContact(c)}>
                             <Edit className="h-3 w-3" />

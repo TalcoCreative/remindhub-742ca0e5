@@ -80,41 +80,41 @@ export default function FormManager() {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Forms</h1>
-          <p className="text-sm text-muted-foreground">Create and manage lead capture forms</p>
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Forms</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage lead capture forms</p>
         </div>
-        <Button className="gap-1.5" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4" /> New Form
+        <Button size="sm" className="gap-1 text-xs sm:text-sm" onClick={() => setShowCreate(true)}>
+          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New Form</span><span className="sm:hidden">New</span>
         </Button>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <Card>
-          <CardContent className="flex items-start gap-4 p-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-5 w-5" /></div>
-            <div><p className="text-sm text-muted-foreground">Total Forms</p><p className="text-2xl font-bold">{forms.length}</p></div>
+          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
+            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Forms</p><p className="text-lg sm:text-2xl font-bold">{forms.length}</p></div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-start gap-4 p-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><BarChart3 className="h-5 w-5" /></div>
-            <div><p className="text-sm text-muted-foreground">Total Submissions</p><p className="text-2xl font-bold">{totalSubmissions}</p></div>
+          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
+            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Submissions</p><p className="text-lg sm:text-2xl font-bold">{totalSubmissions}</p></div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-start gap-4 p-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="h-5 w-5" /></div>
-            <div><p className="text-sm text-muted-foreground">Top Form</p><p className="text-lg font-bold truncate">{topForm?.name || '-'}</p><p className="text-xs text-muted-foreground">{topForm?.submissionCount || 0} submissions</p></div>
+          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
+            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Top Form</p><p className="text-sm sm:text-lg font-bold truncate">{topForm?.name || '-'}</p><p className="text-[10px] sm:text-xs text-muted-foreground">{topForm?.submissionCount || 0} subs</p></div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-start gap-4 p-5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-5 w-5" /></div>
-            <div><p className="text-sm text-muted-foreground">Active Forms</p><p className="text-2xl font-bold">{forms.filter((f) => f.is_active).length}</p></div>
+          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
+            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Active</p><p className="text-lg sm:text-2xl font-bold">{forms.filter((f) => f.is_active).length}</p></div>
           </CardContent>
         </Card>
       </div>
