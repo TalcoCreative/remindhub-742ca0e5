@@ -36,7 +36,9 @@ export default function PublicForm() {
     if (!formConfig) return;
     setLoading(true);
 
-    const sourceVal: LeadSource = formConfig.platform === 'whatsapp' ? 'whatsapp' : 'web';
+    // Use the user-selected source, fallback to form platform, fallback to 'web'
+    const userSource = form.sourcePlatform || formConfig.platform || 'web';
+    const sourceVal = userSource as LeadSource;
 
     const { data: leadData, error: leadErr } = await supabase.from('leads').insert({
       name: form.name,
@@ -129,12 +131,15 @@ export default function PublicForm() {
                   <Select value={form.sourcePlatform} onValueChange={(v) => setForm({ ...form, sourcePlatform: v })}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="web">Website</SelectItem>
                       <SelectItem value="instagram">Instagram</SelectItem>
                       <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="campaign">Campaign</SelectItem>
+                      <SelectItem value="partner">Partner</SelectItem>
                       <SelectItem value="event">Event</SelectItem>
                       <SelectItem value="friend">Friend</SelectItem>
-                      <SelectItem value="partner">Partner</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
