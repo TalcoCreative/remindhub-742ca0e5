@@ -57,6 +57,28 @@ export function useToggleForm() {
   });
 }
 
+export function useUpdateForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, slug, platform }: { id: string; name: string; slug: string; platform: string }) => {
+      const { error } = await supabase.from('forms').update({ name, slug, platform }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['forms'] }),
+  });
+}
+
+export function useDeleteForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('forms').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['forms'] }),
+  });
+}
+
 export function useFormSubmissions(filters?: {
   formId?: string;
   platform?: string;

@@ -7,20 +7,28 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useForms, useCreateForm, useToggleForm } from '@/hooks/useForms';
-import { Plus, Copy, Code, Loader2, FileText, TrendingUp, BarChart3 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useForms, useCreateForm, useToggleForm, useUpdateForm, useDeleteForm } from '@/hooks/useForms';
+import { Plus, Copy, Code, Loader2, FileText, TrendingUp, BarChart3, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFormSubmissions } from '@/hooks/useForms';
 import { Link } from 'react-router-dom';
+import { sourceLabels, type LeadSource } from '@/data/dummy';
+
+const platformOptions = Object.entries(sourceLabels) as [LeadSource, string][];
 
 export default function FormManager() {
   const { toast } = useToast();
   const { data: forms = [], isLoading } = useForms();
   const createForm = useCreateForm();
   const toggleForm = useToggleForm();
+  const updateForm = useUpdateForm();
+  const deleteForm = useDeleteForm();
   const [showCreate, setShowCreate] = useState(false);
   const [newForm, setNewForm] = useState({ name: '', slug: '', platform: 'web' });
   const [embedFormId, setEmbedFormId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ id: string; name: string; slug: string; platform: string } | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { data: allSubmissions = [] } = useFormSubmissions();
 
   // Form stats
@@ -39,6 +47,28 @@ export default function FormManager() {
       toast({ title: 'Form Created' });
       setShowCreate(false);
       setNewForm({ name: '', slug: '', platform: 'web' });
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editForm || !editForm.name || !editForm.slug) return;
+    try {
+      await updateForm.mutateAsync(editForm);
+      toast({ title: 'Form Updated' });
+      setEditForm(null);
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteForm.mutateAsync(deleteId);
+      toast({ title: 'Form Deleted' });
+      setDeleteId(null);
     } catch (err: unknown) {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
     }
@@ -116,6 +146,7 @@ export default function FormManager() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {forms.map((f) => {
           const count = allSubmissions.filter((s) => s.form_id === f.id).length;
+          const platformLabel = sourceLabels[f.platform as LeadSource] || f.platform;
           return (
             <Link to={`/forms/${f.id}`} key={f.id} className="block">
               <Card className="cursor-pointer transition-shadow hover:shadow-md">
@@ -124,18 +155,26 @@ export default function FormManager() {
                     <CardTitle className="text-base">{f.name}</CardTitle>
                     <Switch
                       checked={f.is_active}
-                      onCheckedChange={(v) => { v; toggleForm.mutate({ id: f.id, is_active: !f.is_active }); }}
-                      onClick={(e) => e.preventDefault()}
+                      onCheckedChange={() => toggleForm.mutate({ id: f.id, is_active: !f.is_active })}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     />
                   </div>
-                  <CardDescription>/{f.slug} · {f.platform}</CardDescription>
+                  <CardDescription>/{f.slug} · {platformLabel}</CardDescription>
                 </CardHeader>
-                <CardContent className="flex items-center gap-2">
+                <CardContent className="flex items-center gap-2 flex-wrap">
                   <Badge variant={f.is_active ? 'default' : 'secondary'}>{f.is_active ? 'Active' : 'Inactive'}</Badge>
-                  <Badge variant="outline" className="ml-1">{count} submissions</Badge>
-                  <Button variant="outline" size="sm" className="gap-1 ml-auto" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEmbedFormId(f.id); }}>
-                    <Code className="h-3 w-3" /> Embed
-                  </Button>
+                  <Badge variant="outline">{count} submissions</Badge>
+                  <div className="ml-auto flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({ id: f.id, name: f.name, slug: f.slug, platform: f.platform }); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(f.id); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEmbedFormId(f.id); }}>
+                      <Code className="h-3 w-3" /> Embed
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </Link>
@@ -162,14 +201,13 @@ export default function FormManager() {
               <Input value={newForm.slug} onChange={(e) => setNewForm({ ...newForm, slug: e.target.value })} placeholder="event-pickup" />
             </div>
             <div className="space-y-1">
-              <Label>Platform</Label>
+              <Label>Platform / Source</Label>
               <Select value={newForm.platform} onValueChange={(v) => setNewForm({ ...newForm, platform: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="web">Website</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="event">Event</SelectItem>
-                  <SelectItem value="campaign">Campaign</SelectItem>
+                  {platformOptions.map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -179,6 +217,53 @@ export default function FormManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Form Dialog */}
+      <Dialog open={!!editForm} onOpenChange={() => setEditForm(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Form</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label>Form Name</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Slug</Label>
+                <Input value={editForm.slug} onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Platform / Source</Label>
+                <Select value={editForm.platform} onValueChange={(v) => setEditForm({ ...editForm, platform: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {platformOptions.map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleUpdate} disabled={updateForm.isPending} className="w-full">
+                {updateForm.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Form?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. All submissions linked to this form will remain but the form will no longer be accessible.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Embed Code Dialog */}
       <Dialog open={!!embedFormId} onOpenChange={() => setEmbedFormId(null)}>
