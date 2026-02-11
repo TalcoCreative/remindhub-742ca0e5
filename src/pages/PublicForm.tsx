@@ -67,6 +67,22 @@ export default function PublicForm() {
 
     setLoading(false);
     setSubmitted(true);
+
+    // Build WhatsApp message with form data
+    const lines = [
+      `Halo, saya ingin request pickup e-waste:`,
+      `Nama: ${form.name}`,
+      `No. WA: ${form.phone}`,
+      `Alamat: ${form.address}`,
+      `Area: ${form.area}`,
+      form.category ? `Kategori: ${form.category}` : '',
+      form.estimatedKg ? `Estimasi Berat: ${form.estimatedKg} kg` : '',
+      form.notes ? `Catatan: ${form.notes}` : '',
+      form.sourcePlatform ? `Sumber: ${form.sourcePlatform}` : '',
+    ].filter(Boolean).join('\n');
+
+    const waUrl = `https://wa.me/62811905883?text=${encodeURIComponent(lines)}`;
+    window.open(waUrl, '_blank');
   };
 
   if (!formConfig) {
@@ -152,7 +168,7 @@ export default function PublicForm() {
                   <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Submit Pickup Request
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Submit Request
                 </Button>
               </form>
             )}
