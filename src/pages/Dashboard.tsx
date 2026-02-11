@@ -1,13 +1,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { statusLabels, type LeadStatus } from '@/data/dummy';
-import { Users, TrendingUp, Recycle, DollarSign, BarChart3, ArrowUpRight, Loader2, MessageCircle, CheckCircle2, Eye } from 'lucide-react';
+import { Users, TrendingUp, Recycle, DollarSign, BarChart3, ArrowUpRight, Loader2, MessageCircle, CheckCircle2, Eye, Clock, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLeads } from '@/hooks/useLeads';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+function formatDuration(ms: number): string {
+  if (ms <= 0) return '-';
+  const mins = Math.floor(ms / 60000);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (days > 0) return `${days}d ${hrs % 24}h`;
+  if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+  return `${mins}m`;
+}
 
 function StatCard({ title, value, subtitle, icon: Icon }: {
   title: string; value: string | number; subtitle?: string; icon: React.ElementType;
@@ -62,11 +72,21 @@ export default function Dashboard() {
     const b2cKg = todayLeads.filter((l) => l.type === 'b2c').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
     const b2bKg = todayLeads.filter((l) => l.type === 'b2b').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
     const deals = todayLeads.filter((l) => l.status === 'completed');
-    // Est Revenue = sum of potential_value for today's leads
     const revenue = todayLeads.reduce((s, l) => s + (Number(l.potential_value) || 0), 0);
     const conversion = todayLeads.length > 0 ? Math.round((deals.length / todayLeads.length) * 100) : 0;
-    const answered = chats.filter((c) => c.unread === 0).length;
-    const unanswered = chats.filter((c) => c.unread > 0).length;
+    const answered = chats.filter((c) => c.is_answered).length;
+    const unanswered = chats.filter((c) => !c.is_answered).length;
+
+    // Avg response time from chats that have first_response_at
+    const responseTimes = chats
+      .filter((c) => c.first_response_at && c.created_at)
+      .map((c) => new Date(c.first_response_at!).getTime() - new Date(c.created_at).getTime());
+    const avgResponseMs = responseTimes.length > 0 ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0;
+
+    // Funnel duration: avg time between status transitions (new → completed)
+    const completedLeads = leads.filter((l) => l.status === 'completed' && l.created_at && l.updated_at);
+    const funnelTimes = completedLeads.map((l) => new Date(l.updated_at).getTime() - new Date(l.created_at).getTime());
+    const avgFunnelMs = funnelTimes.length > 0 ? funnelTimes.reduce((a, b) => a + b, 0) / funnelTimes.length : 0;
 
     const sourceMap: Record<string, { count: number; kg: number; value: number }> = {};
     for (const l of todayLeads) {
@@ -78,8 +98,8 @@ export default function Dashboard() {
     }
     const topSource = Object.entries(sourceMap).sort((a, b) => b[1].count - a[1].count)[0];
 
-    return { totalKg, b2cKg, b2bKg, revenue, conversion, deals: deals.length, sourceMap, topSource, answered, unanswered };
-  }, [todayLeads, chats]);
+    return { totalKg, b2cKg, b2bKg, revenue, conversion, deals: deals.length, sourceMap, topSource, answered, unanswered, avgResponseMs, avgFunnelMs };
+  }, [todayLeads, chats, leads]);
 
   const funnelData = funnelSteps.map((s) => ({
     ...s,
@@ -111,12 +131,12 @@ export default function Dashboard() {
         <StatCard title="Conversion Rate" value={`${stats.conversion}%`} subtitle={`${stats.deals} deals closed`} icon={TrendingUp} />
       </div>
 
-      {/* Answered / Unanswered */}
+      {/* Answered / Unanswered / Response Time */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Answered Chats" value={stats.answered} icon={CheckCircle2} />
         <StatCard title="Unanswered Chats" value={stats.unanswered} icon={MessageCircle} />
-        <StatCard title="New Leads (Today)" value={todayLeads.filter((l) => l.status === 'new').length} icon={Users} />
-        <StatCard title="In Progress (Today)" value={todayLeads.filter((l) => l.status === 'in_progress').length} icon={BarChart3} />
+        <StatCard title="Avg Response Time" value={formatDuration(stats.avgResponseMs)} subtitle="First reply" icon={Clock} />
+        <StatCard title="Avg Funnel Duration" value={formatDuration(stats.avgFunnelMs)} subtitle="New → Completed" icon={Timer} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
