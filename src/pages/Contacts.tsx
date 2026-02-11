@@ -176,8 +176,39 @@ export default function Contacts() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const contactNow = (contact: any) => {
-    navigate('/inbox');
+  const contactNow = async (contact: any) => {
+    try {
+      // Check if chat already exists for this phone
+      const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id')
+        .eq('contact_phone', contact.phone)
+        .maybeSingle();
+
+      if (existingChat) {
+        navigate(`/inbox?chat=${existingChat.id}`);
+        return;
+      }
+
+      // Create new chat room
+      const { data: newChat, error } = await supabase.from('chats').insert({
+        contact_name: contact.name,
+        contact_phone: contact.phone,
+        status: 'new' as const,
+        lead_id: contact.lead_id || null,
+      }).select().single();
+
+      if (error) throw error;
+
+      // Link chat to contact
+      await supabase.from('contacts').update({ chat_id: newChat.id, is_contacted: true, last_contacted: new Date().toISOString() }).eq('id', contact.id);
+      qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['chats'] });
+
+      navigate(`/inbox?chat=${newChat.id}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create chat');
+    }
   };
 
   const getLeadStatus = (contact: any) => {
@@ -334,11 +365,9 @@ export default function Contacts() {
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-1">
-                          {!c.is_contacted && (
-                            <Button variant="default" size="sm" className="h-6 text-[10px] gap-1 px-2" onClick={() => contactNow(c)}>
+                          <Button variant="default" size="sm" className="h-6 text-[10px] gap-1 px-2" onClick={() => contactNow(c)}>
                               <MessageCircle className="h-3 w-3" /> Contact Now
-                            </Button>
-                          )}
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditContact(c)}>
                             <Edit className="h-3 w-3" />
                           </Button>

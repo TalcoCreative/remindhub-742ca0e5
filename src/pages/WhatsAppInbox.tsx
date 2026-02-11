@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,8 @@ const statusOptions: LeadStatus[] = ['new', 'not_followed_up', 'followed_up', 'i
 export default function WhatsAppInbox() {
   const qc = useQueryClient();
   const { data: picList = [] } = useTeamMembers();
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(searchParams.get('chat'));
   const [search, setSearch] = useState('');
   const [reply, setReply] = useState('');
   const [showQuickReplies, setShowQuickReplies] = useState(false);
