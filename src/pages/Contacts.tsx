@@ -190,18 +190,15 @@ export default function Contacts() {
         return;
       }
 
-      // Create new chat room
+      // Create new chat room — trigger auto-links contact & lead
       const { data: newChat, error } = await supabase.from('chats').insert({
         contact_name: contact.name,
         contact_phone: contact.phone,
         status: 'new' as const,
-        lead_id: contact.lead_id || null,
       }).select().single();
 
       if (error) throw error;
 
-      // Link chat to contact
-      await supabase.from('contacts').update({ chat_id: newChat.id, is_contacted: true, last_contacted: new Date().toISOString() }).eq('id', contact.id);
       qc.invalidateQueries({ queryKey: ['contacts'] });
       qc.invalidateQueries({ queryKey: ['chats'] });
 
