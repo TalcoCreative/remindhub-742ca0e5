@@ -50,33 +50,41 @@ export default function Dashboard() {
     },
   });
 
+  // Filter leads created today
+  const todayLeads = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    return leads.filter((l) => l.created_at >= startOfDay);
+  }, [leads]);
+
   const stats = useMemo(() => {
-    const totalKg = leads.reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
-    const b2cKg = leads.filter((l) => l.type === 'b2c').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
-    const b2bKg = leads.filter((l) => l.type === 'b2b').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
-    const deals = leads.filter((l) => l.status === 'completed');
-    const revenue = deals.reduce((s, l) => s + (Number(l.final_value) || Number(l.deal_value) || 0), 0);
-    const conversion = leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0;
+    const totalKg = todayLeads.reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
+    const b2cKg = todayLeads.filter((l) => l.type === 'b2c').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
+    const b2bKg = todayLeads.filter((l) => l.type === 'b2b').reduce((s, l) => s + (Number(l.actual_kg) || Number(l.estimated_kg) || 0), 0);
+    const deals = todayLeads.filter((l) => l.status === 'completed');
+    // Est Revenue = sum of potential_value for today's leads
+    const revenue = todayLeads.reduce((s, l) => s + (Number(l.potential_value) || 0), 0);
+    const conversion = todayLeads.length > 0 ? Math.round((deals.length / todayLeads.length) * 100) : 0;
     const answered = chats.filter((c) => c.unread === 0).length;
     const unanswered = chats.filter((c) => c.unread > 0).length;
 
     const sourceMap: Record<string, { count: number; kg: number; value: number }> = {};
-    for (const l of leads) {
+    for (const l of todayLeads) {
       const src = l.source || 'manual';
       if (!sourceMap[src]) sourceMap[src] = { count: 0, kg: 0, value: 0 };
       sourceMap[src].count++;
       sourceMap[src].kg += Number(l.actual_kg) || Number(l.estimated_kg) || 0;
-      sourceMap[src].value += Number(l.final_value) || Number(l.deal_value) || Number(l.potential_value) || 0;
+      sourceMap[src].value += Number(l.potential_value) || 0;
     }
     const topSource = Object.entries(sourceMap).sort((a, b) => b[1].count - a[1].count)[0];
 
     return { totalKg, b2cKg, b2bKg, revenue, conversion, deals: deals.length, sourceMap, topSource, answered, unanswered };
-  }, [leads, chats]);
+  }, [todayLeads, chats]);
 
   const funnelData = funnelSteps.map((s) => ({
     ...s,
     label: statusLabels[s.key],
-    count: leads.filter((l) => l.status === s.key).length,
+    count: todayLeads.filter((l) => l.status === s.key).length,
   }));
   const maxFunnel = Math.max(...funnelData.map((d) => d.count), 1);
 
@@ -87,7 +95,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Overview of RemindHub operations</p>
+          <p className="text-sm text-muted-foreground">Today's overview — {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <Link to="/dashboard-detail">
           <Button variant="outline" size="sm" className="gap-1.5">
@@ -97,9 +105,9 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Leads" value={leads.length} icon={Users} />
-        <StatCard title="Total KG Collected" value={`${stats.totalKg.toLocaleString()} kg`} subtitle={`B2C: ${stats.b2cKg.toLocaleString()} · B2B: ${stats.b2bKg.toLocaleString()}`} icon={Recycle} />
-        <StatCard title="Revenue" value={`Rp ${(stats.revenue / 1e6).toFixed(0)}M`} icon={DollarSign} />
+        <StatCard title="Today's Leads" value={todayLeads.length} icon={Users} />
+        <StatCard title="Total KG (Today)" value={`${stats.totalKg.toLocaleString()} kg`} subtitle={`B2C: ${stats.b2cKg.toLocaleString()} · B2B: ${stats.b2bKg.toLocaleString()}`} icon={Recycle} />
+        <StatCard title="Est. Revenue (Today)" value={`Rp ${(stats.revenue / 1e6).toFixed(1)}M`} icon={DollarSign} />
         <StatCard title="Conversion Rate" value={`${stats.conversion}%`} subtitle={`${stats.deals} deals closed`} icon={TrendingUp} />
       </div>
 
@@ -107,8 +115,8 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Answered Chats" value={stats.answered} icon={CheckCircle2} />
         <StatCard title="Unanswered Chats" value={stats.unanswered} icon={MessageCircle} />
-        <StatCard title="New Leads" value={leads.filter((l) => l.status === 'new').length} icon={Users} />
-        <StatCard title="In Progress" value={leads.filter((l) => l.status === 'in_progress').length} icon={BarChart3} />
+        <StatCard title="New Leads (Today)" value={todayLeads.filter((l) => l.status === 'new').length} icon={Users} />
+        <StatCard title="In Progress (Today)" value={todayLeads.filter((l) => l.status === 'in_progress').length} icon={BarChart3} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
