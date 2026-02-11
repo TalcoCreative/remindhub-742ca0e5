@@ -59,7 +59,9 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at: string
+          first_response_at: string | null
           id: string
+          is_answered: boolean
           last_message: string | null
           last_timestamp: string | null
           lead_id: string | null
@@ -72,7 +74,9 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at?: string
+          first_response_at?: string | null
           id?: string
+          is_answered?: boolean
           last_message?: string | null
           last_timestamp?: string | null
           lead_id?: string | null
@@ -85,7 +89,9 @@ export type Database = {
           contact_name?: string
           contact_phone?: string
           created_at?: string
+          first_response_at?: string | null
           id?: string
+          is_answered?: boolean
           last_message?: string | null
           last_timestamp?: string | null
           lead_id?: string | null

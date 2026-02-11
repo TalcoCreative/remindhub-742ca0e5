@@ -59,9 +59,19 @@ export default function WhatsAppInbox() {
 
   const selectedChat = chats.find((c) => c.id === selectedChatId) ?? null;
 
-  const isAnswered = (chat: DbChat, msgs?: DbMessage[]) => {
-    if (msgs && msgs.length > 0) return msgs[msgs.length - 1].sender === 'agent';
-    return chat.unread === 0;
+  const isAnswered = (chat: DbChat) => {
+    return (chat as any).is_answered === true;
+  };
+
+  const getResponseTime = (chat: DbChat) => {
+    const firstResponse = (chat as any).first_response_at;
+    if (!firstResponse || !chat.created_at) return null;
+    const diff = new Date(firstResponse).getTime() - new Date(chat.created_at).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ${mins % 60}m`;
+    return `${Math.floor(hrs / 24)}d`;
   };
 
   const filteredChats = useMemo(() => {
@@ -284,7 +294,7 @@ export default function WhatsAppInbox() {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <User className="h-4 w-4" />
               </div>
-              <div className={cn('absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card', isAnswered(selectedChat, messages) ? 'bg-success' : 'bg-warning')} />
+              <div className={cn('absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card', isAnswered(selectedChat) ? 'bg-success' : 'bg-warning')} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">{selectedChat.contact_name}</p>
@@ -297,7 +307,8 @@ export default function WhatsAppInbox() {
                 {statusLabels[selectedChat.status as LeadStatus] ?? selectedChat.status}
               </span>
               {selectedChat.assigned_pic && <Badge variant="outline" className="text-[10px] h-5">{selectedChat.assigned_pic}</Badge>}
-              {!isAnswered(selectedChat, messages) && <Badge variant="secondary" className="text-[10px] h-5 text-warning border-warning">Unanswered</Badge>}
+              {!isAnswered(selectedChat) && <Badge variant="secondary" className="text-[10px] h-5 text-warning border-warning">Unanswered</Badge>}
+              {isAnswered(selectedChat) && getResponseTime(selectedChat) && <Badge variant="outline" className="text-[10px] h-5">⏱ {getResponseTime(selectedChat)}</Badge>}
             </div>
           </div>
 
