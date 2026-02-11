@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Search, Plus, Upload, Filter, X, MessageCircle, Phone, Building2, MapPin,
-  CheckCircle2, XCircle, Loader2, Edit, Eye, Download,
+  CheckCircle2, XCircle, Loader2, Edit, Eye, Download, ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusLabels, statusColors, type LeadStatus } from '@/data/dummy';
@@ -39,6 +39,18 @@ export default function Contacts() {
   const [addOpen, setAddOpen] = useState(false);
   const [detailContact, setDetailContact] = useState<any>(null);
   const [editContact, setEditContact] = useState<any>(null);
+  const [sortKey, setSortKey] = useState<string>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   const [form, setForm] = useState({ name: '', phone: '', type: 'b2c', company: '', area: '', source: 'manual', notes: '' });
 
@@ -63,7 +75,7 @@ export default function Contacts() {
   const areas = useMemo(() => [...new Set(contacts.map((c) => c.area).filter(Boolean))], [contacts]);
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter((c) => {
+    let result = contacts.filter((c) => {
       if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.phone.includes(search)) return false;
       if (filterType !== 'all' && c.type !== filterType) return false;
       if (filterSource !== 'all' && c.source !== filterSource) return false;
@@ -73,7 +85,14 @@ export default function Contacts() {
       if (filterArea !== 'all' && c.area !== filterArea) return false;
       return true;
     });
-  }, [contacts, search, filterType, filterSource, filterContacted, filterPic, filterArea]);
+    result = [...result].sort((a, b) => {
+      const av = (a as any)[sortKey] ?? '';
+      const bv = (b as any)[sortKey] ?? '';
+      const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return result;
+  }, [contacts, search, filterType, filterSource, filterContacted, filterPic, filterArea, sortKey, sortDir]);
 
   const hasActiveFilter = filterType !== 'all' || filterSource !== 'all' || filterContacted !== 'all' || filterPic !== 'all' || filterArea !== 'all';
 
@@ -334,14 +353,14 @@ export default function Contacts() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card border-b border-border">
                 <tr className="text-left text-xs text-muted-foreground">
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Phone</th>
-                  <th className="px-3 py-2">Type</th>
-                  <th className="px-3 py-2">Source</th>
-                  <th className="px-3 py-2">Area</th>
-                  <th className="px-3 py-2">PIC</th>
-                   <th className="px-3 py-2">Contacted?</th>
-                   <th className="px-3 py-2 text-right">Actions</th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('name')}><span className="flex items-center">Name<SortIcon col="name" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('phone')}><span className="flex items-center">Phone<SortIcon col="phone" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('type')}><span className="flex items-center">Type<SortIcon col="type" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('source')}><span className="flex items-center">Source<SortIcon col="source" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('area')}><span className="flex items-center">Area<SortIcon col="area" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('assigned_pic')}><span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span></th>
+                  <th className="px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('chat_id')}><span className="flex items-center">Contacted?<SortIcon col="chat_id" /></span></th>
+                  <th className="px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Download, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { Search, Download, LayoutGrid, List, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLeads, type DbLead } from '@/hooks/useLeads';
 import LeadEditDialog from '@/components/leads/LeadEditDialog';
@@ -24,16 +24,35 @@ export default function Leads() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<DbLead | null>(null);
+  const [sortKey, setSortKey] = useState<string>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   const filtered = useMemo(() => {
-    return leads.filter((l) => {
+    let result = leads.filter((l) => {
       if (search && !l.name.toLowerCase().includes(search.toLowerCase()) && !l.phone.includes(search)) return false;
       if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
       if (typeFilter !== 'all' && l.type !== typeFilter) return false;
       return true;
     });
-  }, [leads, search, statusFilter, sourceFilter, typeFilter]);
+    result = [...result].sort((a, b) => {
+      const av = (a as any)[sortKey] ?? '';
+      const bv = (b as any)[sortKey] ?? '';
+      const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return result;
+  }, [leads, search, statusFilter, sourceFilter, typeFilter, sortKey, sortDir]);
 
   const formatRp = (v?: number | null) => v ? `Rp ${Number(v).toLocaleString('id-ID')}` : '-';
 
@@ -114,14 +133,30 @@ export default function Leads() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Area</TableHead>
-                    <TableHead className="text-right">Est. KG</TableHead>
-                    <TableHead className="text-right">Value</TableHead>
-                    <TableHead>PIC</TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('name')}>
+                      <span className="flex items-center">Name<SortIcon col="name" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('type')}>
+                      <span className="flex items-center">Type<SortIcon col="type" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('status')}>
+                      <span className="flex items-center">Status<SortIcon col="status" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('source')}>
+                      <span className="flex items-center">Source<SortIcon col="source" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('area')}>
+                      <span className="flex items-center">Area<SortIcon col="area" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleSort('estimated_kg')}>
+                      <span className="flex items-center justify-end">Est. KG<SortIcon col="estimated_kg" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleSort('potential_value')}>
+                      <span className="flex items-center justify-end">Value<SortIcon col="potential_value" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('assigned_pic')}>
+                      <span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
