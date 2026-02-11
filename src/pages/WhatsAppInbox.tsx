@@ -144,6 +144,7 @@ export default function WhatsAppInbox() {
         'w-full border-r border-border bg-card sm:w-72 lg:w-80 flex-shrink-0',
         selectedChatId ? 'hidden sm:flex sm:flex-col' : 'flex flex-col',
       )}>
+
         <div className="border-b border-border p-2.5">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-primary" />
@@ -209,79 +210,93 @@ export default function WhatsAppInbox() {
           {filteredChats.length === 0 && (
             <div className="p-4 text-center text-xs text-muted-foreground">No chats match filters</div>
           )}
-          {filteredChats.map((chat) => {
-            const answered = isAnswered(chat);
-            return (
-              <ContextMenu key={chat.id}>
-                <ContextMenuTrigger>
-                  <div
-                    className={cn(
-                      'flex cursor-pointer gap-2.5 border-b border-border px-2.5 py-2 transition-colors hover:bg-muted/50',
-                      selectedChatId === chat.id && 'bg-accent',
-                    )}
-                    onClick={() => setSelectedChatId(chat.id)}
-                  >
-                    <div className="relative">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <User className="h-4 w-4" />
+          {/* Mobile: 2-col grid of compact cards; Desktop: standard list */}
+          <div className="grid grid-cols-2 gap-1.5 p-1.5 sm:grid-cols-1 sm:gap-0 sm:p-0">
+            {filteredChats.map((chat) => {
+              const answered = isAnswered(chat);
+              return (
+                <ContextMenu key={chat.id}>
+                  <ContextMenuTrigger>
+                    {/* Mobile: compact card */}
+                    <div
+                      className={cn(
+                        'cursor-pointer transition-colors hover:bg-muted/50 active:bg-accent/80',
+                        // Mobile card style
+                        'rounded-lg border border-border p-2 sm:rounded-none sm:border-0 sm:border-b sm:px-2.5 sm:py-2',
+                        // Desktop list style
+                        'flex flex-col gap-1 sm:flex-row sm:gap-2.5',
+                        selectedChatId === chat.id && 'bg-accent',
+                      )}
+                      onClick={() => setSelectedChatId(chat.id)}
+                    >
+                      {/* Avatar + status - hidden on mobile for compactness */}
+                      <div className="relative hidden sm:block">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className={cn('absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card', answered ? 'bg-success' : 'bg-warning')} />
                       </div>
-                      <div className={cn('absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card', answered ? 'bg-success' : 'bg-warning')} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="truncate text-xs font-semibold">{chat.contact_name}</p>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
-                          {chat.last_timestamp ? new Date(chat.last_timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
-                      </div>
-                      <p className="truncate text-[11px] text-muted-foreground leading-tight">{chat.last_message}</p>
-                      <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-medium leading-none', statusColors[chat.status as LeadStatus] ?? 'bg-muted text-muted-foreground')}>
-                          {statusLabels[chat.status as LeadStatus] ?? chat.status}
-                        </span>
-                        {!answered && (
-                          <span className="flex items-center gap-0.5 text-[9px] text-warning font-medium">
-                            <MessageCircle className="h-2.5 w-2.5" />
+                      {/* Content */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1 min-w-0">
+                            {/* Mobile inline status dot */}
+                            <div className={cn('h-2 w-2 rounded-full shrink-0 sm:hidden', answered ? 'bg-success' : 'bg-warning')} />
+                            <p className="truncate text-xs font-semibold">{chat.contact_name}</p>
+                          </div>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            {chat.last_timestamp ? new Date(chat.last_timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
-                        )}
-                        {chat.unread > 0 && (
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                            {chat.unread}
+                        </div>
+                        <p className="truncate text-[11px] text-muted-foreground leading-tight">{chat.last_message}</p>
+                        <div className="mt-0.5 flex items-center gap-1 flex-wrap">
+                          <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-medium leading-none', statusColors[chat.status as LeadStatus] ?? 'bg-muted text-muted-foreground')}>
+                            {statusLabels[chat.status as LeadStatus] ?? chat.status}
                           </span>
-                        )}
+                          {!answered && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-warning font-medium">
+                              <MessageCircle className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                          {chat.unread > 0 && (
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                              {chat.unread}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="w-52">
-                  <ContextMenuSub>
-                    <ContextMenuSubTrigger>Set Status</ContextMenuSubTrigger>
-                    <ContextMenuSubContent>
-                      {statusOptions.map((s) => (
-                        <ContextMenuItem key={s} onClick={() => updateChatStatus.mutate({ chatId: chat.id, status: s, leadId: chat.lead_id })}>
-                          <span className={cn('mr-2 h-2 w-2 rounded-full', statusColors[s]?.split(' ')[0])} />
-                          {statusLabels[s]}
-                          {chat.status === s && <CheckCircle2 className="ml-auto h-3 w-3 text-primary" />}
-                        </ContextMenuItem>
-                      ))}
-                    </ContextMenuSubContent>
-                  </ContextMenuSub>
-                  <ContextMenuSeparator />
-                  <ContextMenuSub>
-                    <ContextMenuSubTrigger>Assign PIC</ContextMenuSubTrigger>
-                    <ContextMenuSubContent>
-                      {picList.map((pic) => (
-                        <ContextMenuItem key={pic} onClick={() => assignPic.mutate({ chatId: chat.id, pic, leadId: chat.lead_id })}>
-                          {pic}
-                          {chat.assigned_pic === pic && <CheckCircle2 className="ml-auto h-3 w-3 text-primary" />}
-                        </ContextMenuItem>
-                      ))}
-                    </ContextMenuSubContent>
-                  </ContextMenuSub>
-                </ContextMenuContent>
-              </ContextMenu>
-            );
-          })}
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-52">
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>Set Status</ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        {statusOptions.map((s) => (
+                          <ContextMenuItem key={s} onClick={() => updateChatStatus.mutate({ chatId: chat.id, status: s, leadId: chat.lead_id })}>
+                            <span className={cn('mr-2 h-2 w-2 rounded-full', statusColors[s]?.split(' ')[0])} />
+                            {statusLabels[s]}
+                            {chat.status === s && <CheckCircle2 className="ml-auto h-3 w-3 text-primary" />}
+                          </ContextMenuItem>
+                        ))}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    <ContextMenuSeparator />
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>Assign PIC</ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        {picList.map((pic) => (
+                          <ContextMenuItem key={pic} onClick={() => assignPic.mutate({ chatId: chat.id, pic, leadId: chat.lead_id })}>
+                            {pic}
+                            {chat.assigned_pic === pic && <CheckCircle2 className="ml-auto h-3 w-3 text-primary" />}
+                          </ContextMenuItem>
+                        ))}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                  </ContextMenuContent>
+                </ContextMenu>
+              );
+            })}
+          </div>
         </ScrollArea>
       </div>
 
