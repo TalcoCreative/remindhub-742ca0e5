@@ -14,16 +14,391 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chats: {
+        Row: {
+          assigned_pic: string | null
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          id: string
+          last_message: string | null
+          last_timestamp: string | null
+          lead_id: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          unread: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_pic?: string | null
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_timestamp?: string | null
+          lead_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          unread?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_pic?: string | null
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_timestamp?: string | null
+          lead_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          unread?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_submissions: {
+        Row: {
+          campaign_name: string | null
+          created_at: string
+          data: Json
+          form_id: string
+          form_name: string
+          id: string
+          lead_id: string | null
+          platform: string
+          source_platform: string | null
+        }
+        Insert: {
+          campaign_name?: string | null
+          created_at?: string
+          data?: Json
+          form_id: string
+          form_name: string
+          id?: string
+          lead_id?: string | null
+          platform?: string
+          source_platform?: string | null
+        }
+        Update: {
+          campaign_name?: string | null
+          created_at?: string
+          data?: Json
+          form_id?: string
+          form_name?: string
+          id?: string
+          lead_id?: string | null
+          platform?: string
+          source_platform?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          platform: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          platform?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          platform?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_audit_log: {
+        Row: {
+          created_at: string
+          field_name: string
+          id: string
+          lead_id: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          id?: string
+          lead_id: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          id?: string
+          lead_id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_audit_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          actual_kg: number | null
+          address: string | null
+          area: string | null
+          assigned_pic: string | null
+          b2b_processed_kg: number | null
+          company: string | null
+          contract_status: string | null
+          created_at: string
+          created_by: string | null
+          deal_value: number | null
+          estimated_kg: number | null
+          final_value: number | null
+          first_touch_source: Database["public"]["Enums"]["lead_source"] | null
+          form_source: string | null
+          id: string
+          last_contacted: string | null
+          last_touch_source: Database["public"]["Enums"]["lead_source"] | null
+          name: string
+          next_follow_up: string | null
+          notes: string | null
+          phone: string
+          pickup_date: string | null
+          pickup_status: string | null
+          platform_source: string | null
+          potential_value: number | null
+          reason_lost: string | null
+          source: Database["public"]["Enums"]["lead_source"]
+          status: Database["public"]["Enums"]["lead_status"]
+          type: Database["public"]["Enums"]["lead_type"]
+          updated_at: string
+        }
+        Insert: {
+          actual_kg?: number | null
+          address?: string | null
+          area?: string | null
+          assigned_pic?: string | null
+          b2b_processed_kg?: number | null
+          company?: string | null
+          contract_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          estimated_kg?: number | null
+          final_value?: number | null
+          first_touch_source?: Database["public"]["Enums"]["lead_source"] | null
+          form_source?: string | null
+          id?: string
+          last_contacted?: string | null
+          last_touch_source?: Database["public"]["Enums"]["lead_source"] | null
+          name: string
+          next_follow_up?: string | null
+          notes?: string | null
+          phone: string
+          pickup_date?: string | null
+          pickup_status?: string | null
+          platform_source?: string | null
+          potential_value?: number | null
+          reason_lost?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          type?: Database["public"]["Enums"]["lead_type"]
+          updated_at?: string
+        }
+        Update: {
+          actual_kg?: number | null
+          address?: string | null
+          area?: string | null
+          assigned_pic?: string | null
+          b2b_processed_kg?: number | null
+          company?: string | null
+          contract_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          estimated_kg?: number | null
+          final_value?: number | null
+          first_touch_source?: Database["public"]["Enums"]["lead_source"] | null
+          form_source?: string | null
+          id?: string
+          last_contacted?: string | null
+          last_touch_source?: Database["public"]["Enums"]["lead_source"] | null
+          name?: string
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string
+          pickup_date?: string | null
+          pickup_status?: string | null
+          platform_source?: string | null
+          potential_value?: number | null
+          reason_lost?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          type?: Database["public"]["Enums"]["lead_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          sender: string
+          text: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          sender: string
+          text: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          sender?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operator" | "viewer"
+      lead_source:
+        | "whatsapp"
+        | "web"
+        | "instagram"
+        | "referral"
+        | "campaign"
+        | "partner"
+        | "manual"
+        | "tiktok"
+        | "event"
+        | "friend"
+      lead_status:
+        | "new"
+        | "not_followed_up"
+        | "followed_up"
+        | "in_progress"
+        | "picked_up"
+        | "sign_contract"
+        | "completed"
+        | "lost"
+        | "cancelled"
+      lead_type: "b2c" | "b2b"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +525,32 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operator", "viewer"],
+      lead_source: [
+        "whatsapp",
+        "web",
+        "instagram",
+        "referral",
+        "campaign",
+        "partner",
+        "manual",
+        "tiktok",
+        "event",
+        "friend",
+      ],
+      lead_status: [
+        "new",
+        "not_followed_up",
+        "followed_up",
+        "in_progress",
+        "picked_up",
+        "sign_contract",
+        "completed",
+        "lost",
+        "cancelled",
+      ],
+      lead_type: ["b2c", "b2b"],
+    },
   },
 } as const
