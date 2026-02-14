@@ -1,289 +1,122 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useForms, useCreateForm, useToggleForm, useUpdateForm, useDeleteForm } from '@/hooks/useForms';
-import { Plus, Copy, Code, Loader2, FileText, TrendingUp, BarChart3, Pencil, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useFormSubmissions, useForms } from '@/hooks/useForms';
+import { Code, Copy, Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFormSubmissions } from '@/hooks/useForms';
-import { Link } from 'react-router-dom';
-import { sourceLabels, type LeadSource } from '@/data/dummy';
-
-const platformOptions = Object.entries(sourceLabels) as [LeadSource, string][];
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function FormManager() {
   const { toast } = useToast();
   const { data: forms = [], isLoading } = useForms();
-  const createForm = useCreateForm();
-  const toggleForm = useToggleForm();
-  const updateForm = useUpdateForm();
-  const deleteForm = useDeleteForm();
-  const [showCreate, setShowCreate] = useState(false);
-  const [newForm, setNewForm] = useState({ name: '', slug: '', platform: 'web' });
-  const [embedFormId, setEmbedFormId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ id: string; name: string; slug: string; platform: string } | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const { data: allSubmissions = [] } = useFormSubmissions();
+  const { data: submissions = [] } = useFormSubmissions();
+  const [showEmbed, setShowEmbed] = useState(false);
 
-  // Form stats
-  const formStats = forms.map((f) => {
-    const subs = allSubmissions.filter((s) => s.form_id === f.id);
-    return { ...f, submissionCount: subs.length };
-  }).sort((a, b) => b.submissionCount - a.submissionCount);
-
-  const totalSubmissions = allSubmissions.length;
-  const topForm = formStats[0];
-
-  const handleCreate = async () => {
-    if (!newForm.name || !newForm.slug) return;
-    try {
-      await createForm.mutateAsync(newForm);
-      toast({ title: 'Form Created' });
-      setShowCreate(false);
-      setNewForm({ name: '', slug: '', platform: 'web' });
-    } catch (err: unknown) {
-      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!editForm || !editForm.name || !editForm.slug) return;
-    try {
-      await updateForm.mutateAsync(editForm);
-      toast({ title: 'Form Updated' });
-      setEditForm(null);
-    } catch (err: unknown) {
-      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await deleteForm.mutateAsync(deleteId);
-      toast({ title: 'Form Deleted' });
-      setDeleteId(null);
-    } catch (err: unknown) {
-      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
-    }
-  };
+  // Use the first form available (single form approach)
+  const form = forms[0];
+  const formSubmissions = form ? submissions.filter((s) => s.form_id === form.id) : [];
 
   const getEmbedCode = (slug: string) =>
     `<iframe src="${window.location.origin}/form/${slug}" width="100%" height="700" frameborder="0" style="border: none; border-radius: 12px;"></iframe>`;
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
+  if (!form) {
+    return (
+      <div className="p-3 sm:p-4 lg:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Form</h1>
+        <p className="mt-2 text-muted-foreground">No form configured yet. Create a form in the database to get started.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Forms</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Manage lead capture forms</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{form.name}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">/{form.slug} · {formSubmissions.length} submissions</p>
         </div>
-        <Button size="sm" className="gap-1 text-xs sm:text-sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New Form</span><span className="sm:hidden">New</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant={form.is_active ? 'default' : 'secondary'}>{form.is_active ? 'Active' : 'Inactive'}</Badge>
+          <Button size="sm" variant="outline" className="gap-1 text-xs sm:text-sm" onClick={() => setShowEmbed(true)}>
+            <Code className="h-4 w-4" /> <span className="hidden sm:inline">Embed</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card>
           <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
             <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-            <div><p className="text-xs sm:text-sm text-muted-foreground">Forms</p><p className="text-lg sm:text-2xl font-bold">{forms.length}</p></div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
-            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-            <div><p className="text-xs sm:text-sm text-muted-foreground">Submissions</p><p className="text-lg sm:text-2xl font-bold">{totalSubmissions}</p></div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
-            <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-            <div><p className="text-xs sm:text-sm text-muted-foreground">Top Form</p><p className="text-sm sm:text-lg font-bold truncate">{topForm?.name || '-'}</p><p className="text-[10px] sm:text-xs text-muted-foreground">{topForm?.submissionCount || 0} subs</p></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Total Submissions</p><p className="text-lg sm:text-2xl font-bold">{formSubmissions.length}</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-start gap-3 p-3 sm:gap-4 sm:p-5">
             <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-            <div><p className="text-xs sm:text-sm text-muted-foreground">Active</p><p className="text-lg sm:text-2xl font-bold">{forms.filter((f) => f.is_active).length}</p></div>
+            <div><p className="text-xs sm:text-sm text-muted-foreground">Linked to Leads</p><p className="text-lg sm:text-2xl font-bold">{formSubmissions.filter(s => s.lead_id).length}</p></div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Contributors Bar */}
-      {formStats.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Form Contributions</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {formStats.map((f) => {
-              const pct = totalSubmissions > 0 ? Math.round((f.submissionCount / totalSubmissions) * 100) : 0;
-              return (
-                <div key={f.id} className="flex items-center gap-3">
-                  <span className="w-32 truncate text-sm text-muted-foreground">{f.name}</span>
-                  <div className="flex-1">
-                    <div className="h-6 rounded-md bg-muted overflow-hidden">
-                      <div className="h-full rounded-md bg-primary flex items-center px-2 text-xs font-semibold text-primary-foreground transition-all" style={{ width: `${Math.max(pct, 6)}%` }}>{f.submissionCount}</div>
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground w-10 text-right">{pct}%</span>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
+      {/* Submissions Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Recent Submissions</CardTitle>
+        </CardHeader>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Source</TableHead>
+                <TableHead className="hidden sm:table-cell">Campaign</TableHead>
+                <TableHead>Lead</TableHead>
+                <TableHead className="hidden sm:table-cell">Data</TableHead>
+                <TableHead>Submitted</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {formSubmissions.slice(0, 50).map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell className="text-sm">{s.source_platform ?? 'direct'}</TableCell>
+                  <TableCell className="text-sm hidden sm:table-cell">{s.campaign_name ?? '-'}</TableCell>
+                  <TableCell>{s.lead_id ? <Badge variant="secondary">Linked</Badge> : '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground hidden sm:table-cell">{JSON.stringify(s.data)}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{new Date(s.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</TableCell>
+                </TableRow>
+              ))}
+              {formSubmissions.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">No submissions yet.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
-      {/* Form Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {forms.map((f) => {
-          const count = allSubmissions.filter((s) => s.form_id === f.id).length;
-          const platformLabel = sourceLabels[f.platform as LeadSource] || f.platform;
-          return (
-            <Link to={`/forms/${f.id}`} key={f.id} className="block">
-              <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{f.name}</CardTitle>
-                    <Switch
-                      checked={f.is_active}
-                      onCheckedChange={() => toggleForm.mutate({ id: f.id, is_active: !f.is_active })}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    />
-                  </div>
-                  <CardDescription>/{f.slug} · {platformLabel}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={f.is_active ? 'default' : 'secondary'}>{f.is_active ? 'Active' : 'Inactive'}</Badge>
-                  <Badge variant="outline">{count} submissions</Badge>
-                  <div className="ml-auto flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({ id: f.id, name: f.name, slug: f.slug, platform: f.platform }); }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(f.id); }}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEmbedFormId(f.id); }}>
-                      <Code className="h-3 w-3" /> Embed
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-        {forms.length === 0 && (
-          <div className="col-span-full py-12 text-center text-muted-foreground">
-            No forms yet. Create your first form to start capturing leads.
-          </div>
-        )}
-      </div>
-
-      {/* Create Form Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create New Form</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label>Form Name</Label>
-              <Input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') })} placeholder="e.g. Event Pickup Form" />
-            </div>
-            <div className="space-y-1">
-              <Label>Slug</Label>
-              <Input value={newForm.slug} onChange={(e) => setNewForm({ ...newForm, slug: e.target.value })} placeholder="event-pickup" />
-            </div>
-            <div className="space-y-1">
-              <Label>Platform / Source</Label>
-              <Select value={newForm.platform} onValueChange={(v) => setNewForm({ ...newForm, platform: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {platformOptions.map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleCreate} disabled={createForm.isPending} className="w-full">
-              {createForm.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create Form
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Form Dialog */}
-      <Dialog open={!!editForm} onOpenChange={() => setEditForm(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Form</DialogTitle></DialogHeader>
-          {editForm && (
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <Label>Form Name</Label>
-                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Slug</Label>
-                <Input value={editForm.slug} onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Platform / Source</Label>
-                <Select value={editForm.platform} onValueChange={(v) => setEditForm({ ...editForm, platform: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {platformOptions.map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleUpdate} disabled={updateForm.isPending} className="w-full">
-                {updateForm.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Form?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. All submissions linked to this form will remain but the form will no longer be accessible.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Embed Code Dialog */}
-      <Dialog open={!!embedFormId} onOpenChange={() => setEmbedFormId(null)}>
+      {/* Embed Dialog */}
+      <Dialog open={showEmbed} onOpenChange={setShowEmbed}>
         <DialogContent>
           <DialogHeader><DialogTitle>Embed Code</DialogTitle></DialogHeader>
-          {embedFormId && (
-            <div className="space-y-3">
-              <div className="rounded-lg bg-muted p-4">
-                <code className="block whitespace-pre-wrap break-all font-mono text-xs">
-                  {getEmbedCode(forms.find((f) => f.id === embedFormId)?.slug ?? '')}
-                </code>
-              </div>
-              <Button variant="outline" onClick={() => {
-                navigator.clipboard.writeText(getEmbedCode(forms.find((f) => f.id === embedFormId)?.slug ?? ''));
-                toast({ title: 'Copied!' });
-              }}>
-                <Copy className="mr-2 h-4 w-4" /> Copy Code
-              </Button>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Copy and paste this code into your website to embed the form.</p>
+            <div className="rounded-lg bg-muted p-4">
+              <code className="block whitespace-pre-wrap break-all font-mono text-xs">
+                {getEmbedCode(form.slug)}
+              </code>
             </div>
-          )}
+            <Button variant="outline" onClick={() => {
+              navigator.clipboard.writeText(getEmbedCode(form.slug));
+              toast({ title: 'Copied!' });
+            }}>
+              <Copy className="mr-2 h-4 w-4" /> Copy Code
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
