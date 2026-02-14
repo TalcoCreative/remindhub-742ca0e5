@@ -159,6 +159,9 @@ export default function Leads() {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('assigned_pic')}>
                       <span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span>
                     </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('created_at')}>
+                      <span className="flex items-center">Created<SortIcon col="created_at" /></span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -181,11 +184,12 @@ export default function Leads() {
                       <TableCell className="text-right text-sm">{lead.estimated_kg}</TableCell>
                       <TableCell className="text-right text-sm">{formatRp(lead.potential_value)}</TableCell>
                       <TableCell className="text-sm">{lead.assigned_pic}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(lead.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</TableCell>
                     </TableRow>
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">No leads found.</TableCell>
+                      <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">No leads found.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
