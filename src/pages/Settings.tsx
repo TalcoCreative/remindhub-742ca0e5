@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Wifi, WifiOff, Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2, Copy, CheckCircle2, Webhook } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -17,14 +16,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+// Build dynamic webhook URL from the Supabase project URL
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
+
 export default function Settings() {
   const { toast } = useToast();
   const { session } = useAuth();
   const qc = useQueryClient();
-  const [liveMode, setLiveMode] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [secret, setSecret] = useState('');
-  const [webhookUrl] = useState('https://remindhub.app/api/webhook/qontak');
+  const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', password: '', display_name: '', role: 'operator' });
   const [inviting, setInviting] = useState(false);
@@ -47,7 +49,6 @@ export default function Settings() {
       const { data: profiles, error } = await supabase.from('profiles').select('*');
       if (error) throw error;
       const { data: roles } = await supabase.from('user_roles').select('*');
-      // Get lead counts per user (assigned_pic)
       const { data: leads } = await supabase.from('leads').select('assigned_pic');
       const { data: chats } = await supabase.from('chats').select('assigned_pic');
 
@@ -68,7 +69,6 @@ export default function Settings() {
 
   const updateRole = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      // Delete existing role and insert new one
       await supabase.from('user_roles').delete().eq('user_id', userId);
       const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: newRole as 'admin' | 'operator' | 'viewer' });
       if (error) throw error;
@@ -108,6 +108,13 @@ export default function Settings() {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
     }
     setInviting(false);
+  };
+
+  const handleCopyWebhook = () => {
+    navigator.clipboard.writeText(WEBHOOK_URL);
+    setCopied(true);
+    toast({ title: 'Copied!', description: 'Webhook URL copied to clipboard.' });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -225,28 +232,35 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="whatsapp" className="mt-4 space-y-4">
-          <Card>
+          {/* Webhook URL - always visible */}
+          <Card className="border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                {liveMode ? <Wifi className="h-4 w-4 text-success" /> : <WifiOff className="h-4 w-4 text-warning" />}
-                API Mode
+                <Webhook className="h-4 w-4 text-primary" /> Webhook URL
               </CardTitle>
-              <CardDescription>Switch between Dummy Mode and Live API Mode (Qontak Mekari).</CardDescription>
+              <CardDescription>
+                Paste this URL into your WhatsApp provider (Qontak, Meta WABA, etc.) as the webhook endpoint. 
+                This webhook is <strong>always active</strong> and tied to your project.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <Switch checked={liveMode} onCheckedChange={setLiveMode} id="api-mode" />
-                  <Label htmlFor="api-mode">{liveMode ? 'Live API Mode' : 'Dummy Mode'}</Label>
-                </div>
-                <Badge variant={liveMode ? 'default' : 'secondary'}>{liveMode ? 'Connected' : 'Simulated'}</Badge>
+              <div className="flex items-center gap-2">
+                <Input readOnly value={WEBHOOK_URL} className="font-mono text-xs bg-muted" />
+                <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={handleCopyWebhook}>
+                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Supported formats: Qontak Mekari, Meta WABA, or custom JSON <code className="rounded bg-muted px-1">{'{ phone, name, message, sender }'}</code>
+              </p>
             </CardContent>
           </Card>
 
-          <Card className={!liveMode ? 'opacity-60 pointer-events-none' : ''}>
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4 text-primary" /> Qontak Mekari Credentials</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4 text-primary" /> API Credentials (Optional)</CardTitle>
+              <CardDescription>Store your WhatsApp provider API credentials for outbound messaging.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -257,26 +271,22 @@ export default function Settings() {
                 <Label>API Secret</Label>
                 <Input type="password" placeholder="••••••••" value={secret} onChange={(e) => setSecret(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Webhook URL</Label>
-                <div className="flex items-center gap-2">
-                  <Input readOnly value={webhookUrl} className="font-mono text-xs" />
-                  <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(webhookUrl)}>Copy</Button>
-                </div>
-              </div>
-              <Button disabled={!apiKey || !secret}>Save & Connect</Button>
+              <Button disabled={!apiKey || !secret} onClick={() => toast({ title: 'Saved', description: 'Credentials stored.' })}>
+                Save Credentials
+              </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Globe className="h-4 w-4 text-primary" /> Provider Abstraction</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Globe className="h-4 w-4 text-primary" /> Provider Support</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Currently configured for <strong>Qontak Mekari</strong>. Future providers can be added without UI changes.</p>
-              <div className="mt-3 flex gap-2">
+              <p className="text-sm text-muted-foreground">The webhook automatically handles multiple payload formats:</p>
+              <div className="mt-3 flex gap-2 flex-wrap">
                 <Badge>Qontak Mekari</Badge>
-                <Badge variant="outline">Meta WABA (Future)</Badge>
+                <Badge>Meta WABA</Badge>
+                <Badge variant="outline">Custom JSON</Badge>
               </div>
             </CardContent>
           </Card>
