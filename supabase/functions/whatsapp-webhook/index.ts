@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // GET = verification/health check (Meta & Qontak hub.challenge)
+  // GET = verification/health check (Meta hub.challenge or simple health)
   if (req.method === "GET") {
     const url = new URL(req.url);
     const challenge = url.searchParams.get("hub.challenge");
@@ -29,18 +29,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json();
+    console.log("Webhook received:", JSON.stringify(body));
+
+    // ===== Qontak Webhook Validation =====
+    // Qontak sends a POST with "verify_info" to validate the webhook URL.
+    // Must respond with 2xx status.
+    if (body.verify_info !== undefined) {
+      console.log("Qontak webhook verification request received");
+      return new Response(JSON.stringify({ status: "ok", verified: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const body = await req.json();
-    console.log("Webhook received:", JSON.stringify(body));
-
     const events = normalizePayload(body);
 
     for (const event of events) {
-      const { phone, name, message, sender, timestamp, mediaUrl, mediaType } = event;
+      const { phone, name, message, sender, timestamp, mediaUrl, mediaType, roomId } = event;
 
       if (!phone || !message) {
         console.log("Skipping event - missing phone or message:", event);
@@ -50,10 +61,10 @@ Deno.serve(async (req) => {
       // Normalize phone number (remove +, spaces, dashes)
       const normalizedPhone = phone.replace(/[^0-9]/g, "");
       const contactName = name || normalizedPhone;
-      const msgSender = sender === "agent" || sender === "operator" ? "agent" : "customer";
+      const msgSender = sender === "agent" ? "agent" : "customer";
       const msgTimestamp = timestamp || new Date().toISOString();
 
-      // Build message text (include media caption or URL if present)
+      // Build message text (include media info if present)
       let msgText = message;
       if (mediaUrl && !message) {
         msgText = `[${mediaType || "media"}] ${mediaUrl}`;
@@ -87,15 +98,17 @@ Deno.serve(async (req) => {
         chat = newChat;
       } else {
         // Update existing chat with latest message
-        await supabase
-          .from("chats")
-          .update({
-            last_message: msgText,
-            last_timestamp: msgTimestamp,
-            contact_name: contactName || undefined,
-            unread: msgSender === "customer" ? 1 : 0,
-          })
-          .eq("id", chat.id);
+        const updateData: Record<string, unknown> = {
+          last_message: msgText,
+          last_timestamp: msgTimestamp,
+        };
+        if (contactName && contactName !== normalizedPhone) {
+          updateData.contact_name = contactName;
+        }
+        if (msgSender === "customer") {
+          updateData.unread = 1;
+        }
+        await supabase.from("chats").update(updateData).eq("id", chat.id);
       }
 
       // Insert message
@@ -124,6 +137,8 @@ Deno.serve(async (req) => {
   }
 });
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface WebhookEvent {
   phone: string;
   name?: string;
@@ -132,84 +147,68 @@ interface WebhookEvent {
   timestamp?: string;
   mediaUrl?: string;
   mediaType?: string;
+  roomId?: string;
 }
 
-function extractMessageContent(msg: any): { text: string; mediaUrl?: string; mediaType?: string } {
-  const type = msg.type || "text";
-
-  // Text message
-  if (type === "text") {
-    return { text: msg.text?.body || msg.body || msg.text || msg.message || "" };
-  }
-
-  // Media messages (image, video, document, audio, sticker)
-  if (["image", "video", "document", "audio", "sticker"].includes(type)) {
-    const media = msg[type] || {};
-    const caption = media.caption || "";
-    const url = media.link || media.url || media.id || "";
-    return {
-      text: caption || `[${type}]`,
-      mediaUrl: url,
-      mediaType: type,
-    };
-  }
-
-  // Location
-  if (type === "location") {
-    const loc = msg.location || {};
-    return { text: `[location] ${loc.latitude},${loc.longitude}` };
-  }
-
-  // Fallback
-  return { text: msg.text?.body || msg.body || msg.text || msg.message || JSON.stringify(msg) };
-}
+// ─── Payload Normalization ────────────────────────────────────────────────────
 
 function normalizePayload(body: any): WebhookEvent[] {
-  // ===== Format 1: Direct single event { phone, message } =====
+  // ===== Format 1: Mekari Qontak Message Interaction Webhook =====
+  // Actual payload from docs.qontak.com:
+  // {
+  //   "id": "string",
+  //   "type": "text",
+  //   "room_id": "string",
+  //   "sender_type": "string",    // "customer" or agent
+  //   "sender": { "name": "string" },
+  //   "participant_type": "string",
+  //   "text": "string",
+  //   "created_at": "datetime",
+  //   "room": {
+  //     "id": "string",
+  //     "name": "string",
+  //     "account_uniq_id": "628xxx",
+  //     "channel": "wa"
+  //   }
+  // }
+  if (body.room_id && body.room && body.sender_type !== undefined) {
+    const phone = body.room?.account_uniq_id || "";
+    const name = body.room?.name || body.sender?.name || "";
+    const isAgent = body.sender_type === "agent" ||
+                    body.participant_type === "agent";
+    const content = extractQontakContent(body);
+
+    return [{
+      phone,
+      name,
+      message: content.text,
+      sender: isAgent ? "agent" : "customer",
+      timestamp: body.created_at || undefined,
+      mediaUrl: content.mediaUrl,
+      mediaType: content.mediaType,
+      roomId: body.room_id,
+    }];
+  }
+
+  // ===== Format 2: Qontak broadcast_log_status event =====
+  // Has contact_phone_number and messages_broadcast_id
+  if (body.contact_phone_number && body.messages_broadcast_id) {
+    console.log("Broadcast status webhook received, status:", body.status);
+    // We don't create a chat for broadcast status updates, just log it
+    return [];
+  }
+
+  // ===== Format 3: Direct single event { phone, message } (custom/testing) =====
   if (body.phone && body.message) {
     return [body as WebhookEvent];
   }
 
-  // ===== Format 2: Array of events =====
+  // ===== Format 4: Array of events =====
   if (Array.isArray(body)) {
     return body.filter((e: any) => e.phone && e.message);
   }
 
-  // ===== Format 3: Qontak Chat Room Created event =====
-  // Qontak sends: { id, name, channel, messages: [{ from, text: { body }, type, timestamp }], ... }
-  if (body.messages && Array.isArray(body.messages) && body.channel) {
-    return body.messages.map((m: any) => {
-      const content = extractMessageContent(m);
-      return {
-        phone: m.from || body.account_uniq_id || "",
-        name: body.name || "",
-        message: content.text,
-        sender: m.from_me ? "agent" : "customer",
-        timestamp: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : undefined,
-        mediaUrl: content.mediaUrl,
-        mediaType: content.mediaType,
-      };
-    });
-  }
-
-  // ===== Format 4: Qontak nested data format =====
-  if (body.data?.from || body.data?.messages) {
-    const msgs = body.data.messages || [body.data];
-    return msgs.map((m: any) => {
-      const content = extractMessageContent(m);
-      return {
-        phone: m.from || body.data.from || "",
-        name: m.name || body.data.contact_name || body.data.name || "",
-        message: content.text,
-        sender: m.is_outgoing ? "agent" : "customer",
-        timestamp: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : undefined,
-        mediaUrl: content.mediaUrl,
-        mediaType: content.mediaType,
-      };
-    });
-  }
-
-  // ===== Format 5: Meta WABA webhook =====
+  // ===== Format 5: Meta WABA webhook (fallback) =====
   if (body.entry) {
     const events: WebhookEvent[] = [];
     for (const entry of body.entry) {
@@ -218,13 +217,15 @@ function normalizePayload(body: any): WebhookEvent[] {
         if (!value?.messages) continue;
         const contactName = value.contacts?.[0]?.profile?.name || "";
         for (const msg of value.messages) {
-          const content = extractMessageContent(msg);
+          const content = extractMetaContent(msg);
           events.push({
             phone: msg.from || "",
             name: contactName,
             message: content.text,
             sender: "customer",
-            timestamp: msg.timestamp ? new Date(Number(msg.timestamp) * 1000).toISOString() : undefined,
+            timestamp: msg.timestamp
+              ? new Date(Number(msg.timestamp) * 1000).toISOString()
+              : undefined,
             mediaUrl: content.mediaUrl,
             mediaType: content.mediaType,
           });
@@ -241,4 +242,74 @@ function normalizePayload(body: any): WebhookEvent[] {
 
   console.log("Unknown payload format, attempting best-effort parse");
   return [];
+}
+
+// ─── Content Extractors ──────────────────────────────────────────────────────
+
+/**
+ * Extract message content from Qontak message interaction payload.
+ * Qontak uses `type` field and `text` is at root level.
+ */
+function extractQontakContent(msg: any): { text: string; mediaUrl?: string; mediaType?: string } {
+  const type = msg.type || "text";
+
+  if (type === "text") {
+    return { text: msg.text || "" };
+  }
+
+  // Media types: image, video, document, audio, sticker, file
+  if (["image", "video", "document", "audio", "sticker", "file"].includes(type)) {
+    // Qontak may put URL in text field for media or in a nested object
+    const url = msg.url || msg.text || "";
+    const caption = msg.caption || "";
+    return {
+      text: caption || `[${type}]`,
+      mediaUrl: url,
+      mediaType: type,
+    };
+  }
+
+  // Location
+  if (type === "location") {
+    const lat = msg.latitude || msg.location?.latitude || "";
+    const lng = msg.longitude || msg.location?.longitude || "";
+    return { text: `[location] ${lat},${lng}` };
+  }
+
+  // Contacts
+  if (type === "contacts") {
+    return { text: `[contact] ${msg.text || ""}` };
+  }
+
+  // Fallback
+  return { text: msg.text || JSON.stringify(msg) };
+}
+
+/**
+ * Extract message content from Meta WABA webhook payload.
+ */
+function extractMetaContent(msg: any): { text: string; mediaUrl?: string; mediaType?: string } {
+  const type = msg.type || "text";
+
+  if (type === "text") {
+    return { text: msg.text?.body || "" };
+  }
+
+  if (["image", "video", "document", "audio", "sticker"].includes(type)) {
+    const media = msg[type] || {};
+    const caption = media.caption || "";
+    const url = media.link || media.url || media.id || "";
+    return {
+      text: caption || `[${type}]`,
+      mediaUrl: url,
+      mediaType: type,
+    };
+  }
+
+  if (type === "location") {
+    const loc = msg.location || {};
+    return { text: `[location] ${loc.latitude},${loc.longitude}` };
+  }
+
+  return { text: msg.text?.body || msg.body || JSON.stringify(msg) };
 }
