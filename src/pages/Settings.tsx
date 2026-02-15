@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2, Copy, CheckCircle2, Webhook } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2, Copy, CheckCircle2, Webhook, AlertCircle, ToggleLeft } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +17,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Build dynamic webhook URL from the Supabase project URL
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
 
@@ -24,13 +24,18 @@ export default function Settings() {
   const { toast } = useToast();
   const { session } = useAuth();
   const qc = useQueryClient();
-  const [apiKey, setApiKey] = useState('');
-  const [secret, setSecret] = useState('');
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', password: '', display_name: '', role: 'operator' });
   const [inviting, setInviting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  // Qontak credentials state
+  const [qontakToken, setQontakToken] = useState('');
+  const [qontakRefreshToken, setQontakRefreshToken] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [switchingLive, setSwitchingLive] = useState(false);
 
   const { data: isAdmin } = useQuery({
     queryKey: ['is-admin'],
@@ -41,7 +46,28 @@ export default function Settings() {
     enabled: !!session?.user?.id,
   });
 
-  // Fetch all users (profiles + roles)
+  // Fetch app settings
+  const { data: appSettings = [], isLoading: settingsLoading } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('app_settings').select('*');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getSetting = (key: string) => appSettings.find((s: any) => s.key === key)?.value || '';
+  const qontakMode = getSetting('qontak_mode') || 'dummy';
+  const savedToken = getSetting('qontak_token');
+  const savedRefreshToken = getSetting('qontak_refresh_token');
+
+  // Load saved values into form
+  useEffect(() => {
+    if (savedToken && !qontakToken) setQontakToken(savedToken);
+    if (savedRefreshToken && !qontakRefreshToken) setQontakRefreshToken(savedRefreshToken);
+  }, [savedToken, savedRefreshToken]);
+
+  // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ['all-users'],
     enabled: !!isAdmin,
@@ -56,13 +82,7 @@ export default function Settings() {
         const userRoles = roles?.filter((r) => r.user_id === p.user_id) ?? [];
         const leadsHandled = leads?.filter((l) => l.assigned_pic === p.display_name).length ?? 0;
         const chatsHandled = chats?.filter((c) => c.assigned_pic === p.display_name).length ?? 0;
-        return {
-          ...p,
-          roles: userRoles.map((r) => r.role),
-          roleId: userRoles[0]?.id,
-          leadsHandled,
-          chatsHandled,
-        };
+        return { ...p, roles: userRoles.map((r) => r.role), roleId: userRoles[0]?.id, leadsHandled, chatsHandled };
       });
     },
   });
@@ -116,6 +136,87 @@ export default function Settings() {
     toast({ title: 'Copied!', description: 'Webhook URL copied to clipboard.' });
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Upsert a setting
+  const upsertSetting = async (key: string, value: string) => {
+    const existing = appSettings.find((s: any) => s.key === key);
+    if (existing) {
+      await supabase.from('app_settings').update({ value, updated_by: session?.user?.id }).eq('key', key);
+    } else {
+      await supabase.from('app_settings').insert({ key, value, updated_by: session?.user?.id });
+    }
+  };
+
+  // Save credentials
+  const handleSaveCredentials = async () => {
+    if (!qontakToken) return;
+    setSaving(true);
+    try {
+      await upsertSetting('qontak_token', qontakToken);
+      await upsertSetting('qontak_refresh_token', qontakRefreshToken);
+      qc.invalidateQueries({ queryKey: ['app-settings'] });
+      toast({ title: 'Saved!', description: 'Credentials berhasil disimpan.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setSaving(false);
+  };
+
+  // Toggle mode (dummy <-> live)
+  const handleToggleMode = async () => {
+    const newMode = qontakMode === 'live' ? 'dummy' : 'live';
+
+    // Switching to live → validate token first
+    if (newMode === 'live') {
+      if (!savedToken) {
+        toast({ title: 'Token kosong', description: 'Simpan Token terlebih dahulu sebelum switch ke Live.', variant: 'destructive' });
+        return;
+      }
+
+      setSwitchingLive(true);
+      setValidating(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('validate-qontak', {
+          body: { token: savedToken },
+        });
+
+        if (error) throw error;
+
+        if (!data?.valid) {
+          toast({
+            title: 'Token Invalid',
+            description: data?.error || 'Token Qontak tidak valid. Pastikan token benar.',
+            variant: 'destructive',
+          });
+          setValidating(false);
+          setSwitchingLive(false);
+          return;
+        }
+
+        toast({ title: 'Token Valid ✓', description: 'Berhasil terkoneksi ke Qontak.' });
+      } catch (err: any) {
+        toast({ title: 'Validasi Gagal', description: err.message, variant: 'destructive' });
+        setValidating(false);
+        setSwitchingLive(false);
+        return;
+      }
+      setValidating(false);
+    }
+
+    try {
+      await upsertSetting('qontak_mode', newMode);
+      qc.invalidateQueries({ queryKey: ['app-settings'] });
+      toast({
+        title: newMode === 'live' ? '🟢 Live Mode' : '🔵 Dummy Mode',
+        description: newMode === 'live' ? 'Semua data terhubung ke Qontak API.' : 'Mode dummy aktif, data tidak terhubung ke API.',
+      });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setSwitchingLive(false);
+  };
+
+  const isLive = qontakMode === 'live';
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
@@ -232,60 +333,160 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="whatsapp" className="mt-4 space-y-4">
-          {/* Webhook URL - always visible */}
+          {/* Mode Toggle Card */}
+          <Card className={isLive ? 'border-green-500/50 bg-green-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ToggleLeft className="h-4 w-4" />
+                    Mode: {isLive ? (
+                      <Badge className="bg-green-600 hover:bg-green-700 text-white">🟢 LIVE</Badge>
+                    ) : (
+                      <Badge variant="secondary">🔵 DUMMY</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    {isLive
+                      ? 'Terhubung ke Mekari Qontak API. Semua data real-time.'
+                      : 'Mode dummy aktif. Data tidak terhubung ke API Qontak.'
+                    }
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {(validating || switchingLive) && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <Switch
+                    checked={isLive}
+                    onCheckedChange={handleToggleMode}
+                    disabled={switchingLive || settingsLoading}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            {!savedToken && !isLive && (
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  Simpan Token Qontak terlebih dahulu untuk bisa switch ke Live mode.
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Webhook URL */}
           <Card className="border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Webhook className="h-4 w-4 text-primary" /> Webhook URL
               </CardTitle>
               <CardDescription>
-                Paste this URL into your WhatsApp provider (Qontak, Meta WABA, etc.) as the webhook endpoint. 
-                This webhook is <strong>always active</strong> and tied to your project.
+                Paste URL ini di Mekari Qontak → Settings → Message Interactions → Webhook URL.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 <Input readOnly value={WEBHOOK_URL} className="font-mono text-xs bg-muted" />
                 <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={handleCopyWebhook}>
-                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Supported formats: Qontak Mekari, Meta WABA, or custom JSON <code className="rounded bg-muted px-1">{'{ phone, name, message, sender }'}</code>
+                Aktifkan event: <code className="rounded bg-muted px-1">receive_message_from_customer</code> dan <code className="rounded bg-muted px-1">receive_message_from_agent</code>
               </p>
             </CardContent>
           </Card>
 
+          {/* Qontak Credentials */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4 text-primary" /> API Credentials (Optional)</CardTitle>
-              <CardDescription>Store your WhatsApp provider API credentials for outbound messaging.</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Key className="h-4 w-4 text-primary" /> Qontak Credentials
+              </CardTitle>
+              <CardDescription>
+                Dapatkan Token dari Mekari Qontak → Settings → API → Access Token. 
+                Token ini digunakan untuk mengirim pesan outbound dan validasi koneksi.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>API Key</Label>
-                <Input placeholder="qontak_api_key_xxxxx" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+                <Label>Token <span className="text-destructive">*</span></Label>
+                <Input
+                  type="password"
+                  placeholder="Paste token dari Qontak"
+                  value={qontakToken}
+                  onChange={(e) => setQontakToken(e.target.value)}
+                />
+                {savedToken && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Token tersimpan
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>API Secret</Label>
-                <Input type="password" placeholder="••••••••" value={secret} onChange={(e) => setSecret(e.target.value)} />
+                <Label>Refresh Token</Label>
+                <Input
+                  type="password"
+                  placeholder="Paste refresh token dari Qontak (opsional)"
+                  value={qontakRefreshToken}
+                  onChange={(e) => setQontakRefreshToken(e.target.value)}
+                />
+                {savedRefreshToken && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Refresh token tersimpan
+                  </p>
+                )}
               </div>
-              <Button disabled={!apiKey || !secret} onClick={() => toast({ title: 'Saved', description: 'Credentials stored.' })}>
-                Save Credentials
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  disabled={!qontakToken || saving}
+                  onClick={handleSaveCredentials}
+                  className="gap-1.5"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Save Credentials
+                </Button>
+                {savedToken && (
+                  <Button
+                    variant="outline"
+                    disabled={validating}
+                    onClick={async () => {
+                      setValidating(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('validate-qontak', {
+                          body: { token: savedToken },
+                        });
+                        if (error) throw error;
+                        if (data?.valid) {
+                          toast({ title: '✅ Token Valid', description: 'Koneksi ke Qontak berhasil.' });
+                        } else {
+                          toast({ title: '❌ Token Invalid', description: data?.error || 'Token tidak valid.', variant: 'destructive' });
+                        }
+                      } catch (err: any) {
+                        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+                      }
+                      setValidating(false);
+                    }}
+                    className="gap-1.5"
+                  >
+                    {validating && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Test Connection
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
 
+          {/* Provider Support */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><Globe className="h-4 w-4 text-primary" /> Provider Support</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">The webhook automatically handles multiple payload formats:</p>
+              <p className="text-sm text-muted-foreground">Webhook otomatis mendeteksi format payload dari:</p>
               <div className="mt-3 flex gap-2 flex-wrap">
-                <Badge>Qontak Mekari</Badge>
-                <Badge>Meta WABA</Badge>
+                <Badge>Mekari Qontak</Badge>
+                <Badge variant="outline">Meta WABA</Badge>
                 <Badge variant="outline">Custom JSON</Badge>
               </div>
             </CardContent>
