@@ -11,10 +11,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // GET = verification/health check
+  // GET = verification/health check (Meta & Qontak hub.challenge)
   if (req.method === "GET") {
     const url = new URL(req.url);
-    // Support webhook verification (e.g. Meta/Qontak challenge)
     const challenge = url.searchParams.get("hub.challenge");
     if (challenge) {
       return new Response(challenge, { status: 200, headers: corsHeaders });
@@ -38,15 +37,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log("Webhook received:", JSON.stringify(body));
 
-    // Normalize payload - support multiple formats
-    // Format 1: Direct { phone, name, message, sender }
-    // Format 2: Qontak/Meta WABA format
-    // Format 3: Custom format with contacts/messages arrays
-    
     const events = normalizePayload(body);
 
     for (const event of events) {
-      const { phone, name, message, sender, timestamp } = event;
+      const { phone, name, message, sender, timestamp, mediaUrl, mediaType } = event;
 
       if (!phone || !message) {
         console.log("Skipping event - missing phone or message:", event);
@@ -58,6 +52,12 @@ Deno.serve(async (req) => {
       const contactName = name || normalizedPhone;
       const msgSender = sender === "agent" || sender === "operator" ? "agent" : "customer";
       const msgTimestamp = timestamp || new Date().toISOString();
+
+      // Build message text (include media caption or URL if present)
+      let msgText = message;
+      if (mediaUrl && !message) {
+        msgText = `[${mediaType || "media"}] ${mediaUrl}`;
+      }
 
       // Find or create chat
       let { data: chat } = await supabase
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
           .insert({
             contact_name: contactName,
             contact_phone: normalizedPhone,
-            last_message: message,
+            last_message: msgText,
             last_timestamp: msgTimestamp,
             status: "new",
             unread: msgSender === "customer" ? 1 : 0,
@@ -85,12 +85,23 @@ Deno.serve(async (req) => {
           continue;
         }
         chat = newChat;
+      } else {
+        // Update existing chat with latest message
+        await supabase
+          .from("chats")
+          .update({
+            last_message: msgText,
+            last_timestamp: msgTimestamp,
+            contact_name: contactName || undefined,
+            unread: msgSender === "customer" ? 1 : 0,
+          })
+          .eq("id", chat.id);
       }
 
       // Insert message
       const { error: msgErr } = await supabase.from("messages").insert({
         chat_id: chat.id,
-        text: message,
+        text: msgText,
         sender: msgSender,
         created_at: msgTimestamp,
       });
@@ -119,45 +130,103 @@ interface WebhookEvent {
   message: string;
   sender: string;
   timestamp?: string;
+  mediaUrl?: string;
+  mediaType?: string;
+}
+
+function extractMessageContent(msg: any): { text: string; mediaUrl?: string; mediaType?: string } {
+  const type = msg.type || "text";
+
+  // Text message
+  if (type === "text") {
+    return { text: msg.text?.body || msg.body || msg.text || msg.message || "" };
+  }
+
+  // Media messages (image, video, document, audio, sticker)
+  if (["image", "video", "document", "audio", "sticker"].includes(type)) {
+    const media = msg[type] || {};
+    const caption = media.caption || "";
+    const url = media.link || media.url || media.id || "";
+    return {
+      text: caption || `[${type}]`,
+      mediaUrl: url,
+      mediaType: type,
+    };
+  }
+
+  // Location
+  if (type === "location") {
+    const loc = msg.location || {};
+    return { text: `[location] ${loc.latitude},${loc.longitude}` };
+  }
+
+  // Fallback
+  return { text: msg.text?.body || msg.body || msg.text || msg.message || JSON.stringify(msg) };
 }
 
 function normalizePayload(body: any): WebhookEvent[] {
-  // Format 1: Direct single event
+  // ===== Format 1: Direct single event { phone, message } =====
   if (body.phone && body.message) {
     return [body as WebhookEvent];
   }
 
-  // Format 2: Array of events
+  // ===== Format 2: Array of events =====
   if (Array.isArray(body)) {
     return body.filter((e: any) => e.phone && e.message);
   }
 
-  // Format 3: Qontak webhook format
-  if (body.data?.from || body.data?.messages) {
-    const msgs = body.data.messages || [body.data];
-    return msgs.map((m: any) => ({
-      phone: m.from || body.data.from || "",
-      name: m.name || body.data.contact_name || body.data.name || "",
-      message: m.text?.body || m.body || m.text || m.message || "",
-      sender: m.is_outgoing ? "agent" : "customer",
-      timestamp: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : undefined,
-    }));
+  // ===== Format 3: Qontak Chat Room Created event =====
+  // Qontak sends: { id, name, channel, messages: [{ from, text: { body }, type, timestamp }], ... }
+  if (body.messages && Array.isArray(body.messages) && body.channel) {
+    return body.messages.map((m: any) => {
+      const content = extractMessageContent(m);
+      return {
+        phone: m.from || body.account_uniq_id || "",
+        name: body.name || "",
+        message: content.text,
+        sender: m.from_me ? "agent" : "customer",
+        timestamp: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : undefined,
+        mediaUrl: content.mediaUrl,
+        mediaType: content.mediaType,
+      };
+    });
   }
 
-  // Format 4: Meta WABA webhook
+  // ===== Format 4: Qontak nested data format =====
+  if (body.data?.from || body.data?.messages) {
+    const msgs = body.data.messages || [body.data];
+    return msgs.map((m: any) => {
+      const content = extractMessageContent(m);
+      return {
+        phone: m.from || body.data.from || "",
+        name: m.name || body.data.contact_name || body.data.name || "",
+        message: content.text,
+        sender: m.is_outgoing ? "agent" : "customer",
+        timestamp: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : undefined,
+        mediaUrl: content.mediaUrl,
+        mediaType: content.mediaType,
+      };
+    });
+  }
+
+  // ===== Format 5: Meta WABA webhook =====
   if (body.entry) {
     const events: WebhookEvent[] = [];
     for (const entry of body.entry) {
       for (const change of entry.changes || []) {
         const value = change.value;
         if (!value?.messages) continue;
+        const contactName = value.contacts?.[0]?.profile?.name || "";
         for (const msg of value.messages) {
+          const content = extractMessageContent(msg);
           events.push({
             phone: msg.from || "",
-            name: value.contacts?.[0]?.profile?.name || "",
-            message: msg.text?.body || msg.body || "",
+            name: contactName,
+            message: content.text,
             sender: "customer",
             timestamp: msg.timestamp ? new Date(Number(msg.timestamp) * 1000).toISOString() : undefined,
+            mediaUrl: content.mediaUrl,
+            mediaType: content.mediaType,
           });
         }
       }
@@ -165,7 +234,7 @@ function normalizePayload(body: any): WebhookEvent[] {
     return events;
   }
 
-  // Format 5: Wrapped in { events: [...] }
+  // ===== Format 6: Wrapped in { events: [...] } =====
   if (body.events && Array.isArray(body.events)) {
     return body.events.filter((e: any) => e.phone && e.message);
   }

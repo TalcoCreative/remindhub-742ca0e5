@@ -20,6 +20,7 @@ export type Database = {
           delivery_status: string
           filters: Json
           id: string
+          image_url: string | null
           message_template: string
           mode: string
           recipient_phones: string[] | null
@@ -32,6 +33,7 @@ export type Database = {
           delivery_status?: string
           filters?: Json
           id?: string
+          image_url?: string | null
           message_template: string
           mode?: string
           recipient_phones?: string[] | null
@@ -44,6 +46,7 @@ export type Database = {
           delivery_status?: string
           filters?: Json
           id?: string
+          image_url?: string | null
           message_template?: string
           mode?: string
           recipient_phones?: string[] | null

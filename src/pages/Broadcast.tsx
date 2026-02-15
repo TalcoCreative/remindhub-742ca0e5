@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
 import {
-  Send, Filter, Users, Loader2, CheckCircle2, Clock, AlertTriangle, History,
+  Send, Filter, Users, Loader2, CheckCircle2, Clock, AlertTriangle, History, ImagePlus, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusLabels, type LeadStatus } from '@/data/dummy';
@@ -43,6 +43,7 @@ export default function Broadcast() {
   const [dateTo, setDateTo] = useState('');
 
   const [message, setMessage] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: leads = [], isLoading } = useQuery({
@@ -101,19 +102,21 @@ export default function Broadcast() {
       const { error } = await supabase.from('broadcast_logs').insert({
         sent_by: user?.email || 'unknown',
         message_template: message,
+        image_url: imageUrl || null,
         filters: filtersUsed,
         total_recipients: recipients.length,
         recipient_phones: recipients.map((r) => r.phone),
         delivery_status: 'sent',
-        mode: 'dummy',
-      });
+        mode: 'live',
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['broadcast_logs'] });
       setConfirmOpen(false);
       setMessage('');
-      toast.success(`Broadcast sent to ${recipients.length} recipients (Dummy Mode)`);
+      setImageUrl('');
+      toast.success(`Broadcast logged for ${recipients.length} recipients`);
     },
   });
 
@@ -132,7 +135,7 @@ export default function Broadcast() {
     <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 lg:p-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Broadcast</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground">Send targeted messages (Dummy Mode)</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Send targeted WhatsApp messages via Qontak</p>
       </div>
 
       <Tabs defaultValue="compose">
@@ -212,6 +215,34 @@ export default function Broadcast() {
                   rows={5}
                 />
 
+                {/* Image Attachment */}
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <ImagePlus className="h-3.5 w-3.5" /> Image Attachment (Optional)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Paste image URL (https://...)"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="text-xs"
+                    />
+                    {imageUrl && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setImageUrl('')}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  {imageUrl && (
+                    <div className="relative w-24 h-24 rounded-md border border-border overflow-hidden bg-muted">
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
+                    </div>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    For Qontak broadcast: image will be sent as header media. URL must be publicly accessible.
+                  </p>
+                </div>
+
                 {/* Preview */}
                 {message && recipients.length > 0 && (
                   <div className="space-y-2">
@@ -281,9 +312,14 @@ export default function Broadcast() {
           <div className="space-y-3">
             <div className="rounded-lg bg-muted p-3 space-y-1">
               <p className="text-sm"><strong>Recipients:</strong> {recipients.length} leads</p>
-              <p className="text-sm"><strong>Mode:</strong> Dummy (no real messages sent)</p>
               <p className="text-sm"><strong>Sent by:</strong> {user?.email}</p>
+              {imageUrl && <p className="text-sm"><strong>Image:</strong> Attached ✓</p>}
             </div>
+            {imageUrl && (
+              <div className="w-20 h-20 rounded-md border border-border overflow-hidden">
+                <img src={imageUrl} alt="Broadcast" className="w-full h-full object-cover" />
+              </div>
+            )}
             <div className="rounded-md border border-border p-3">
               <p className="text-xs font-medium text-muted-foreground mb-1">Message Template:</p>
               <p className="text-sm whitespace-pre-wrap">{message}</p>
