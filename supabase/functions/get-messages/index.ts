@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateMekariHeaders } from "../_shared/mekari-auth.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -31,40 +31,17 @@ Deno.serve(async (req) => {
             });
         }
 
-        // Get Bearer token from app_settings
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const mekariPath = `/v1/qontak/chat/rooms/${roomId}/histories?limit=${limit}`;
+        const mekariHeaders = await generateMekariHeaders("GET", mekariPath);
 
-        const { data: settings } = await supabase
-            .from("app_settings")
-            .select("key, value")
-            .in("key", ["qontak_token"]);
-
-        const token = settings?.find((s: any) => s.key === "qontak_token")?.value;
-
-        if (!token) {
-            return new Response(JSON.stringify({ error: "Qontak token not configured" }), {
-                status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        const headers = {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-        };
-
-        // Fetch Messages
-        const msgsRes = await fetch(
-            `https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/histories?limit=${limit}`,
-            { headers }
-        );
+        const msgsRes = await fetch(`https://api.mekari.com${mekariPath}`, {
+            headers: mekariHeaders,
+        });
 
         const rawText = await msgsRes.text();
 
         if (!msgsRes.ok) {
-            console.error(`Qontak API failed (${msgsRes.status}): ${rawText.substring(0, 300)}`);
+            console.error(`Mekari API failed (${msgsRes.status}): ${rawText.substring(0, 300)}`);
             return new Response(JSON.stringify({
                 error: "Failed to fetch messages",
                 details: rawText,
@@ -103,11 +80,11 @@ Deno.serve(async (req) => {
             };
         }).reverse();
 
-        console.log(`Returning ${messages.length} messages (Bearer Token)`);
+        console.log(`Returning ${messages.length} messages (HMAC Auth)`);
 
         return new Response(JSON.stringify({
             data: messages,
-            meta: { count: messages.length, source: "Bearer Token", room_id: roomId }
+            meta: { count: messages.length, source: "Mekari HMAC Auth", room_id: roomId }
         }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
