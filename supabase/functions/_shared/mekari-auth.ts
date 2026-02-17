@@ -19,7 +19,7 @@ export async function generateMekariHeaders(
 
   const dateStr = new Date().toUTCString();
   // Per Mekari docs: request-line = "{METHOD} {path} HTTP/1.1"
-  const requestLine = `${method.toLowerCase()} ${pathWithQuery} HTTP/1.1`;
+  const requestLine = `${method.toUpperCase()} ${pathWithQuery} HTTP/1.1`;
   // Per Mekari docs: payload = "date: {date}\n{request-line}"
   const payload = `date: ${dateStr}\n${requestLine}`;
 
