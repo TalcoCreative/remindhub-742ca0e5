@@ -91,8 +91,10 @@ export type Database = {
           id: string
           is_answered: boolean
           last_message: string | null
+          last_message_id: string | null
           last_timestamp: string | null
           lead_id: string | null
+          room_id: string | null
           status: Database["public"]["Enums"]["lead_status"]
           unread: number
           updated_at: string
@@ -107,8 +109,10 @@ export type Database = {
           id?: string
           is_answered?: boolean
           last_message?: string | null
+          last_message_id?: string | null
           last_timestamp?: string | null
           lead_id?: string | null
+          room_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           unread?: number
           updated_at?: string
@@ -123,8 +127,10 @@ export type Database = {
           id?: string
           is_answered?: boolean
           last_message?: string | null
+          last_message_id?: string | null
           last_timestamp?: string | null
           lead_id?: string | null
+          room_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           unread?: number
           updated_at?: string
