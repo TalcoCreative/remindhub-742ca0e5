@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateMekariHeaders } from "../_shared/mekari-auth.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -12,33 +12,10 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const supabase = createClient(
-            Deno.env.get("SUPABASE_URL")!,
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-        );
-
-        // 1. Get Qontak Token
-        const { data: settings, error: settingsError } = await supabase
-            .from("app_settings")
-            .select("value")
-            .eq("key", "qontak_token")
-            .single();
-
-        if (settingsError || !settings?.value) {
-            return new Response(JSON.stringify({ error: "Qontak token not configured" }), {
-                status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        const qontakToken = settings.value;
-
         let requestBody: any = {};
         try {
             requestBody = await req.json();
         } catch (e) {
-            console.error("Failed to parse request body:", e);
-            // Fallback for debugging - maybe it was sent as query param?
             const url = new URL(req.url);
             if (url.searchParams.get("roomId")) {
                 requestBody = { roomId: url.searchParams.get("roomId") };
@@ -54,25 +31,30 @@ Deno.serve(async (req) => {
             });
         }
 
-        // 2. Fetch Messages from Qontak (Endpoint: /rooms/{id}/histories)
-        // Correct endpoint per Qontak API spec v1.0.3
-        let msgsRes = await fetch(`https://api.mekari.com/v1/qontak/chat/rooms/${roomId}/histories?limit=${limit}`, {
-            headers: { "Authorization": `Bearer ${qontakToken}` },
+        // Fetch Messages using HMAC Auth
+        const mekariPath = `/v1/qontak/chat/rooms/${roomId}/histories?limit=${limit}`;
+        const mekariHeaders = await generateMekariHeaders("GET", mekariPath);
+
+        let msgsRes = await fetch(`https://api.mekari.com${mekariPath}`, {
+            headers: mekariHeaders,
         });
 
         let rawText = await msgsRes.text();
         let msgsData: any = {};
 
         if (!msgsRes.ok) {
-            console.warn(`Mekari API failed (${msgsRes.status}), trying Legacy API...`);
+            console.warn(`Mekari API failed (${msgsRes.status}): ${rawText.substring(0, 200)}`);
+            
             // Fallback to Legacy API
-            msgsRes = await fetch(`https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/histories?limit=${limit}`, {
-                headers: { "Authorization": `Bearer ${qontakToken}` },
+            const legacyPath = `/api/open/v1/rooms/${roomId}/histories?limit=${limit}`;
+            const legacyHeaders = await generateMekariHeaders("GET", legacyPath);
+            msgsRes = await fetch(`https://service-chat.qontak.com${legacyPath}`, {
+                headers: legacyHeaders,
             });
             rawText = await msgsRes.text();
 
             if (!msgsRes.ok) {
-                console.error("Legacy API Error:", rawText);
+                console.error("Both APIs failed:", rawText);
                 return new Response(JSON.stringify({
                     error: "Failed to fetch messages (Both APIs)",
                     details: rawText,
@@ -84,66 +66,45 @@ Deno.serve(async (req) => {
             }
         }
 
-        console.log(`DEBUG: Qontak Messages API Status: ${msgsRes.status}`);
-
         try {
             msgsData = rawText ? JSON.parse(rawText) : {};
         } catch (e) {
-            console.error("Failed to parse Qontak response:", e);
             return new Response(JSON.stringify({ error: "Invalid JSON", details: rawText.substring(0, 500) }), {
                 status: 502,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
-        if (!msgsRes.ok) {
-            console.error(`Final API Check failed: ${msgsRes.status} | Body: ${rawText.substring(0, 200)}`);
-            // Instead of erroring, return empty list to keep UI stable
-            return new Response(JSON.stringify({
-                data: [],
-                meta: { source: "Error Fallback", original_error: msgsData }
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        // 3. Normalize Data for Frontend
-        // Map Qontak message structure to what UI expects
+        // Normalize Data
         const messages = (msgsData.data || []).map((msg: any) => {
-            // Qontak API variations for sender identification
             const isAgent =
                 msg.sender_type === 'agent' ||
                 msg.direction === 'outbound' ||
                 msg.sender?.type === 'agent' ||
-                msg.is_room_owner === false; // Fallback
+                msg.is_room_owner === false;
 
             return {
                 id: msg.id,
                 text: msg.text || (msg.type === 'file' ? '[File]' : (msg.type === 'image' ? '[Image]' : '[Media]')),
                 created_at: msg.created_at,
-                sender: isAgent ? 'agent' : 'customer', // Match Inbox.tsx expectation
+                sender: isAgent ? 'agent' : 'customer',
                 is_agent: isAgent,
                 status: msg.status
             };
-        }).reverse(); // API returns newest first, Chat UI needs oldest first
+        }).reverse();
 
-        console.log(`DEBUG: Returning ${messages.length} messages. Source: ${(!msgsRes.ok || rawText.includes("service-chat")) ? "Legacy" : "Mekari"}`);
+        console.log(`Returning ${messages.length} messages (HMAC Auth)`);
 
         return new Response(JSON.stringify({
             data: messages,
-            meta: {
-                count: messages.length,
-                source: "Mekari/Legacy Hybrid",
-                room_id: roomId
-            }
+            meta: { count: messages.length, source: "Mekari HMAC Auth", room_id: roomId }
         }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
 
     } catch (err: any) {
-        console.error("Critical Error in get-messages:", err);
+        console.error("Critical Error:", err);
         return new Response(JSON.stringify({ error: "Internal Server Error", details: err.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
