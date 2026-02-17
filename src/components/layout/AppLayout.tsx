@@ -37,8 +37,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}>
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <Link to="/" className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Recycle className="h-5 w-5" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <img src="/logo.png" alt="Logo" className="h-6 w-6 object-contain" />
             </div>
             {sidebarOpen && <span className="whitespace-nowrap text-lg font-bold text-sidebar-foreground">RemindHub</span>}
           </Link>

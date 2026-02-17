@@ -47,8 +47,8 @@ export default function EmbedForm() {
           <div className="mx-auto max-w-lg">
             <Card className="border-2 border-primary/20">
               <CardHeader className="text-center">
-                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Recycle className="h-6 w-6" />
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
                 </div>
                 <CardTitle>Pickup Request — Remind Indonesia</CardTitle>
                 <CardDescription>Schedule a free e-waste pickup. We'll contact you via WhatsApp.</CardDescription>

@@ -93,11 +93,50 @@
   }
 }
 
+@layer utilities {
+  .glass {
+    @apply bg-white/90 dark:bg-black/90 backdrop-blur-xl border border-border/60 dark:border-white/20 shadow-md;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300;
+  }
+
+  .glass-sidebar {
+    @apply bg-card/95 dark:bg-card/95 backdrop-blur-xl border-r border-border;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-teal-600 to-emerald-600 font-extrabold;
+  }
+
+  .premium-shadow {
+    @apply shadow-[0_8px_30px_rgb(0, 0, 0, 0.04)] dark:shadow-[0_8px_30px_rgb(0, 0, 0, 0.2)];
+  }
+
+  /* iMessage-style gradient bubble */
+  .bubble-agent {
+    @apply bg-gradient-to-br from-primary to-teal-600 text-white border-0 shadow-md;
+  }
+
+  /* Custom Scrollbar for sleek look */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   }
 }

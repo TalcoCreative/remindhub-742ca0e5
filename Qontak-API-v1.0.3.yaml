@@ -1,0 +1,6456 @@
+openapi: 3.0.1
+info:
+  title: Qontak Open API v1.0.3
+  version: 1.0.3
+  description: This API consists of Open Service
+  contact:
+    email: engineering.qontak@mekari.com
+    name: Qontak OpenAPI Doc
+    url: 'https://docs.qontak.com'
+servers:
+  - url: 'https://service-chat.qontak.com{postfix}'
+    variables:
+      postfix:
+        default: /api/open
+        enum:
+          - /
+          - /api/open
+        description: / used to get Token only
+    description: Qontak OpenAPI Endpoint
+  - url: 'https://service-chat.qontak.com{postfix}'
+    variables:
+      postfix:
+        default: /
+        enum:
+          - /
+          - /api/open
+        description: / used to get Token only
+    description: To get Token only
+tags:
+  - name: Auth
+    description: Operations about authorization
+  - name: Integrations
+    description: Operations about integrations
+  - name: Broadcasts
+    description: Operations about broadcasts
+  - name: File Uploader
+    description: Operations about file uploaders
+  - name: Templates
+    description: Operations about templates
+  - name: Rooms
+    description: Operations about rooms
+  - name: Messages
+    description: Operations about messages
+  - name: Message Interactions
+    description: Operations about message interactions
+  - name: Room Interactions
+    description: Operations about room interactions
+  - name: Waba Interactions
+    description: Operations about waba interactions
+  - name: Contacts
+    description: Operations about contacts
+  - name: Contact Objects
+    description: Operations about contact objects
+  - name: Reports
+    description: Operations about reports
+  - name: Custom Fields
+    description: Operations about custom_fields
+paths:
+  /v1/oauth/token:
+    post:
+      tags:
+        - Auth
+      summary: Get Authorization Token
+      description: |-
+        Scopes :admin, :agent, :supervisor, bot
+
+        *Please Use API.MEKARI.COM
+      operationId: postOauthToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postOauthToken'
+            example:
+              username: example@qontak.com
+              password: yourPassword!
+              grant_type: password
+              client_id: yourClientId
+              client_secret: yourClientSecret
+        required: true
+      responses:
+        '201':
+          description: Token successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: number
+                  refresh_token:
+                    type: string
+                  created_at:
+                    type: number
+                required:
+                  - access_token
+                  - token_type
+                  - expires_in
+                  - refresh_token
+                  - created_at
+                example:
+                  access_token: 3VXpI_RLrVYkSVKoK_38XwrHHTBx3gs6X383_yfamtA
+                  token_type: bearer
+                  expires_in: 31556952
+                  refresh_token: CYyYaGWVqVvsNlBiV8o7YnCmgNYMBhP3GY3xLSzuKs0
+                  created_at: 1646036425
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      messages:
+                        type: array
+                        items:
+                          properties: {}
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: '401'
+                    messages:
+                      - 'Client authentication failed due to unknown client, no client authentication included, or unsupported authentication method.'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      messages:
+                        type: array
+                        items:
+                          properties: {}
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: 422
+                    messages:
+                      - 'grant_type is missing, grant_type does not have a valid value'
+      deprecated: true
+  '/v1/integrations/{channel_id}':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Integrations
+      summary: Find Channel
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1IntegrationsChannelId
+      parameters:
+        - name: channel_id
+          in: path
+          description: Channel ID
+          required: true
+          schema:
+            type: string
+          example: 95f13217-8d1e-45ca-9e58-2bb241eb115c
+      responses:
+        '200':
+          description: Find Channel
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      target_channel:
+                        type: string
+                      webhook:
+                        type: string
+                      settings:
+                        type: object
+                        properties:
+                          account_name:
+                            type: string
+                          server_wa_id:
+                            type: string
+                          authorization:
+                            type: string
+                          domain_server:
+                            type: string
+                        required:
+                          - account_name
+                          - server_wa_id
+                          - authorization
+                          - domain_server
+                      organization_id:
+                        type: string
+                      created_at:
+                        type: string
+                    required:
+                      - id
+                      - target_channel
+                      - webhook
+                      - settings
+                      - organization_id
+                      - created_at
+                required:
+                  - status
+                  - data
+                example:
+                  status: success
+                  data:
+                    id: 95f13217-8d1e-45ca-9e58-2bb241eb115c
+                    target_channel: wa
+                    webhook: SA1fhV5FnxYNAaWxsSpaQ
+                    settings:
+                      account_name: Sandbox
+                      server_wa_id: Q9U9z+5eGeYzZt7HrByJ8DaVURdIrOgv1HimdoSFP4+t4d6lO3cT7Yk=
+                      authorization: rgsZgWzLirQ1ybjeVGmK2pQzPjep2/NkiV8v4K/C5BkjluT/7j/lh7oVFnue+GizY9H7wdj6YP8MhmTL
+                      domain_server: Wpk3Pz2anMwznhWCmIqHLNllozT55D95RCsivScvTOl0Xa0EbAWGkhndK+7WOmurIw7BX0TM7sPLaA==
+                    organization_id: 1d8671bb-48f3-4a84-8efb-bfad56fdf721
+                    created_at: '2020-09-04T03:35:15.376+00:00'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      messages:
+                        type: array
+                        items:
+                          properties: {}
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: 401
+                    messages:
+                      - Invalid token
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      messages:
+                        type: array
+                        items:
+                          properties: {}
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: 422
+                    messages:
+                      - Channel not found
+  /v1/integrations:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Integrations
+      summary: List all integrated channel
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access, :bot, :agent'
+      operationId: getV1Integrations
+      parameters:
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: List all integrated channel
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    uniqueItems: true
+                    items:
+                      required:
+                        - id
+                        - target_channel
+                        - webhook
+                        - organization_id
+                        - created_at
+                      properties:
+                        id:
+                          type: string
+                        target_channel:
+                          type: string
+                        webhook:
+                          type: string
+                        settings:
+                          type: object
+                          properties:
+                            account_name:
+                              type: string
+                            server_wa_id:
+                              type: string
+                            authorization:
+                              type: string
+                            domain_server:
+                              type: string
+                          required:
+                            - account_name
+                            - server_wa_id
+                            - authorization
+                            - domain_server
+                        organization_id:
+                          type: string
+                        created_at:
+                          type: string
+                  meta:
+                    type: object
+                    properties:
+                      pagination:
+                        type: object
+                        properties:
+                          cursor:
+                            type: object
+                            properties:
+                              next:
+                                type: string
+                              prev:
+                                type: string
+                            required:
+                              - next
+                              - prev
+                          offset:
+                            type: number
+                          limit:
+                            type: number
+                          total:
+                            type: number
+                        required:
+                          - cursor
+                          - offset
+                          - limit
+                          - total
+                    required:
+                      - pagination
+                required:
+                  - status
+                  - data
+                  - meta
+                example:
+                  status: success
+                  data:
+                    - id: 95f13217-8d1e-45ca-9e58-2bb241eb115c
+                      target_channel: wa
+                      webhook: SA1fhV5FnxYNAaWxsSpaQ
+                      settings:
+                        account_name: Sandbox
+                        server_wa_id: Q9U9z+5eGeYzZt7HrByJ8DaVURdIrOgv1HimdoSFP4+t4d6lO3cT7Yk=
+                        authorization: rgsZgWzLirQ1ybjeVGmK2pQzPjep2/NkiV8v4K/C5BkjluT/7j/lh7oVFnue+GizY9H7wdj6YP8MhmTL
+                        domain_server: Wpk3Pz2anMwznhWCmIqHLNllozT55D95RCsivScvTOl0Xa0EbAWGkhndK+7WOmurIw7BX0TM7sPLaA==
+                      organization_id: 1d8671bb-48f3-4a84-8efb-bfad56fdf721
+                      created_at: '2020-09-04T03:35:15.376+00:00'
+                  meta:
+                    pagination:
+                      cursor:
+                        next: MTU5OTE5MDUxNS4zNzY=
+                        prev: MTU5OTE5MDUxNS4zNzY=
+                      offset: 1
+                      limit: 100
+                      total: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      messages:
+                        type: array
+                        items:
+                          properties: {}
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: 401
+                    messages:
+                      - Invalid token
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  status:
+                    type: string
+                    minLength: 1
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      messages:
+                        type: array
+                        uniqueItems: true
+                        items:
+                          required:
+                            - type
+                          properties:
+                            active_model_errors:
+                              type: object
+                              properties:
+                                offset:
+                                  type: array
+                                  items:
+                                    properties: {}
+                              required:
+                                - offset
+                            type:
+                              type: string
+                    required:
+                      - code
+                      - messages
+                required:
+                  - status
+                  - error
+                example:
+                  status: error
+                  error:
+                    code: 422
+                    messages:
+                      - active_model_errors:
+                          offset:
+                            - must be an integer
+                        type: expectation_failed
+  /v1/broadcasts/whatsapp/direct:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Create Whatsapp Broadcast Direct
+      description: |-
+        Scopes :admin, :supervisor, :has_broadcast_access.
+
+        Notes: 
+        - Rate limit 60 reqs/min.
+        - If you need to broadcast with the same content, we suggest to use bulk API (POST /v1/broadcasts/whatsapp).
+        - Please ensure that your image/file hosting is fast enough (latency < 2seconds), otherwise messaging (including broadcasting) will fail. Or you can upload to our s3 bucket first by using v1/file_uploader.
+      operationId: postV1BroadcastsWhatsappDirect
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postV1BroadcastsWhatsappDirect'
+            examples:
+              General:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters:
+                    header:
+                      format: DOCUMENT
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/files/01417dc5-9cd1-40b7-8900-d8b9fd6f250e/sample.pdf'
+                        - key: filename
+                          value: sample.pdf
+                    body:
+                      - key: '1'
+                        value_text: Lorem Ipsum
+                        value: customer_name
+                    buttons:
+                      - index: '0'
+                        type: url
+                        value: paymentUniqNumber
+              Template without variable:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters: {}
+              Template with Image Attachment:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters:
+                    header:
+                      format: IMAGE
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/images/52e21eb9-9292-4c86-b0ad-28038440062f/logo-qontak.png'
+                        - key: filename
+                          value: logo-qontak.png
+              Template with Video Attachment:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters:
+                    header:
+                      format: VIDEO
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/videos/d2db9aa6-614b-4716-932c-2d8147b2d9d2/file_example_MP4_480_1_5MG.mp4'
+                        - key: filename
+                          value: video.mp4
+              Template with Document Attachment:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters:
+                    header:
+                      format: DOCUMENT
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/files/01417dc5-9cd1-40b7-8900-d8b9fd6f250e/sample.pdf'
+                        - key: filename
+                          value: sample.pdf
+              Template with CTA Dynamic Button:
+                value:
+                  to_name: string
+                  to_number: string
+                  message_template_id: string
+                  channel_integration_id: string
+                  language:
+                    code: en
+                  parameters:
+                    buttons:
+                      - index: '0'
+                        type: url
+                        value: paymentUniqNumber
+        required: true
+      responses:
+        '201':
+          description: Create Whatsapp Broadcast Direct
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1BroadcastsWhatsappDirect
+  /v1/broadcasts/contacts:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Validate WhatsApp account phone number
+      description: 'Scopes :admin'
+      operationId: postV1BroadcastsContacts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - channel_integration_id
+                - phone_numbers
+              properties:
+                phone_numbers:
+                  type: array
+                  description: '["+628123000000", "+65833110000"]'
+                  items:
+                    type: string
+                channel_integration_id:
+                  type: string
+        required: true
+      responses:
+        '201':
+          description: Validate WhatsApp account phone number
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/broadcasts/agent_can_send_broadcast:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Determine whether agent can send broadcast or not
+      description: 'Scopes :admin, :supervisor'
+      operationId: putV1BroadcastsAgentCanSendBroadcast
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+        required: true
+      responses:
+        '200':
+          description: Determine whether agent can send broadcast or not
+          content: {}
+  /v1/broadcasts/whatsapp:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: List Whatsapp Broadcast
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: getV1BroadcastsWhatsapp
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List Whatsapp Broadcast
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Update Whatsapp Broadcast
+      description: 'Scopes :admin, :supervisor'
+      operationId: putV1BroadcastsWhatsapp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/putV1BroadcastsWhatsapp'
+        required: true
+      responses:
+        '200':
+          description: Update Whatsapp Broadcast
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1BroadcastsWhatsapp
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Create Whatsapp Broadcast
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access. Rate limit 1 req/5 mins.'
+      operationId: postV1BroadcastsWhatsapp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postV1BroadcastsWhatsapp'
+            examples:
+              General:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  parameters:
+                    header:
+                      format: DOCUMENT
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/files/01417dc5-9cd1-40b7-8900-d8b9fd6f250e/sample.pdf'
+                        - key: filename
+                          value: sample.pdf
+                    body:
+                      - key: '1'
+                        value: customer_name
+                      - key: '2'
+                        value: company
+                      - key: '3'
+                        value: phone
+                    buttons:
+                      - index: '0'
+                        type: url
+                        value: UniqPaymentNumber
+              Template Without Variable:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  parameters: {}
+              Template with Image Attachment:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  parameters:
+                    header:
+                      format: IMAGE
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/images/52e21eb9-9292-4c86-b0ad-28038440062f/logo-qontak.png'
+                        - key: filename
+                          value: logo-qontak.png
+              Template with Video Attachment:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  parameters:
+                    header:
+                      format: VIDEO
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/videos/d2db9aa6-614b-4716-932c-2d8147b2d9d2/file_example_MP4_480_1_5MG.mp4'
+                        - key: filename
+                          value: video.mp4
+              Template with Document Attachment:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  execute_type: immediately
+                  send_at: '2019-08-24T14:15:22Z'
+                  division_id: string
+                  parameters:
+                    header:
+                      format: DOCUMENT
+                      params:
+                        - key: url
+                          value: 'https://qontak-hub-development.s3.amazonaws.com/uploads/direct/files/01417dc5-9cd1-40b7-8900-d8b9fd6f250e/sample.pdf'
+                        - key: filename
+                          value: sample.pdf
+              Template with Variable:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  execute_type: immediately
+                  send_at: '2019-08-24T14:15:22Z'
+                  division_id: string
+                  parameters:
+                    body:
+                      - key: '1'
+                        value: customer_name
+                      - key: '2'
+                        value: company
+                      - key: '3'
+                        value: phone
+              Template with CTA Dynamic Button:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  execute_type: immediately
+                  send_at: '2019-08-24T14:15:22Z'
+                  division_id: string
+                  parameters:
+                    buttons:
+                      - index: '0'
+                        type: url
+                        value: paymentUniq
+              Broadcast with Schedule:
+                value:
+                  name: string
+                  message_template_id: string
+                  contact_list_id: string
+                  channel_integration_id: string
+                  execute_type: specific
+                  send_at: '2022-03-24T14:15:22Z'
+                  parameters:
+                    body:
+                      - key: '1'
+                        value: customer_name
+        required: true
+      responses:
+        '201':
+          description: Create Whatsapp Broadcast
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1BroadcastsWhatsapp
+  '/v1/broadcasts/{id}/whatsapp/log/download':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: Download Whatsapp Broadcast Log
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1BroadcastsIdWhatsappLogDownload
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Download Whatsapp Broadcast Log
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/broadcasts/{id}/whatsapp/log':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Broadcasts
+      summary: List Whatsapp Broadcast Log
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1BroadcastsIdWhatsappLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: filters
+          in: query
+          description: 'Filter field : key=value, key_2=value dua'
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List Whatsapp Broadcast Log
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/divisions:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Divisions
+      summary: List Whatsapp Broadcast Log
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1Divisions
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+        - schema:
+            type: array
+          in: query
+          name: target_channels
+        - schema:
+            type: string
+          in: query
+          name: channel_id
+      responses:
+        '200':
+          description: To List/Search Divisions
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    parameters: []
+  /v1/file_uploader:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - File Uploader
+      summary: Upload file directly
+      description: 'Scopes :admin, :supervisor, :agent, :bot, :has_broadcast_access'
+      operationId: postV1FileUploader
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        '201':
+          description: Upload file directly
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/templates/whatsapp/example:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: upload template example
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: postV1TemplatesWhatsappExample
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        '201':
+          description: upload template example
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/templates/language:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: List language
+      description: List language
+      operationId: getV1TemplatesLanguage
+      responses:
+        '200':
+          description: List language
+          content: {}
+  /v1/templates/category:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: List category
+      description: List category
+      operationId: getV1TemplatesCategory
+      responses:
+        '200':
+          description: List category
+          content: {}
+  /v1/templates/whatsapp:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: List Whatsapp Template
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1TemplatesWhatsapp
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: hsm_chat
+          in: query
+          schema:
+            type: boolean
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List Whatsapp Template
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: Create Whatsapp Template
+      description: 'scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: postV1TemplatesWhatsapp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postV1TemplatesWhatsapp'
+        required: true
+      responses:
+        '201':
+          description: Create Whatsapp Template
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1TemplatesWhatsapp
+  /v1/templates/whatsapp/hsm_chat:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: Create HSM Chat Template
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: postV1TemplatesWhatsappHsmChat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postV1TemplatesWhatsappHsmChat'
+        required: true
+      responses:
+        '201':
+          description: Create HSM Chat Template
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1TemplatesWhatsappHsmChat
+  '/v1/templates/{id}/whatsapp':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Templates
+      summary: Detail Whatsapp Template
+      description: 'scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: getV1TemplatesIdWhatsapp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail Whatsapp Template
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/auto_resolve':
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Update dont auto resolve
+      description: 'Scopes :admin, :supervisor'
+      operationId: putV1RoomsIdAutoResolve
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - is_dont_auto_resolve
+              properties:
+                is_dont_auto_resolve:
+                  type: boolean
+        required: true
+      responses:
+        '200':
+          description: Update dont auto resolve
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/assign_round_robin':
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Bot assign room using round robin
+      description: 'Scopes :bot'
+      operationId: postV1RoomsIdAssignRoundRobin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                is_online:
+                  type: boolean
+      responses:
+        '201':
+          description: Bot assign room using round robin
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To Detail room
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: getV1RoomsId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: To Detail room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To rename room
+      description: 'scopes :admin, :supervisor, :agent'
+      operationId: putV1RoomsId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: To rename room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/histories':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: get room history
+      description: 'Scopes :supervisor, :agent'
+      operationId: getV1RoomsIdHistories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+      responses:
+        '200':
+          description: get room history
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/rooms/auto_takeover:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Agent automatically take one room
+      description: 'Scopes :agent'
+      operationId: postV1RoomsAutoTakeover
+      responses:
+        '201':
+          description: Agent automatically take one room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/takeover':
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Agent take over a room
+      description: 'Scopes :agent'
+      operationId: postV1RoomsIdTakeover
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Agent take over a room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/rooms/specific/info:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: get Specific information about room
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: getV1RoomsSpecificInfo
+      parameters:
+        - name: target
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - unassigned
+      responses:
+        '200':
+          description: get Specific information about room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/rooms/list/expired:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: get list expired room
+      description: 'Scopes :admin, :supervisor, :bot'
+      operationId: getV1RoomsListExpired
+      responses:
+        '200':
+          description: get list expired room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/mark_all_as_read':
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Mark all as read message in a room
+      description: 'Scopes :agent, :spv, :admin'
+      operationId: putV1RoomsIdMarkAllAsRead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mark all as read message in a room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/agents/assignable':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Get assignable agents for current room
+      description: 'Scopes :admin, :supervisor, :bot'
+      operationId: getV1RoomsIdAgentsAssignable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: is_online
+            enum:
+              - created_at
+              - updated_at
+              - is_online
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_online
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Get assignable agents for current room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/participants':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To list participants in a room
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: getV1RoomsIdParticipants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            default: agent
+            enum:
+              - agent
+              - customer
+              - system
+              - all
+      responses:
+        '200':
+          description: To list participants in a room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/agents/{user_id}':
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Assign agent to room
+      description: 'Scopes :admin, :supervisor, :bot'
+      operationId: postV1RoomsIdAgentsUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Assign agent to room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Unassign agent from room
+      description: 'Scopes :admin, :supervisor'
+      operationId: deleteV1RoomsIdAgentsUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unassign agent from room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/handover/{user_id}':
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: Agent handover room to another agent
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1RoomsIdHandoverUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Agent handover room to another agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/rooms/resolve_expired:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To multiple resolve expired room
+      description: 'Scopes :admin, :supervisor, :resolve_room'
+      operationId: putV1RoomsResolveExpired
+      parameters:
+        - name: channels
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - wa
+                - fb
+                - telegram
+                - qontak
+                - livechat_dot_com
+                - ig
+                - web_chat
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                is_all:
+                  type: boolean
+                room_ids:
+                  type: array
+                  description: room_ids
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: To multiple resolve expired room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/resolve':
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To mark room as resolved
+      description: 'Scopes :admin, :supervisor, :agent, :resolve_room'
+      operationId: putV1RoomsIdResolve
+      parameters:
+        - name: id
+          in: path
+          description: room_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                agent_id:
+                  type: string
+                  description: agent_id/user_id not participant_id
+      responses:
+        '200':
+          description: To mark room as resolved
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/rooms/{id}/tags':
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To tag room
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: postV1RoomsIdTags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - tag
+              properties:
+                tag:
+                  type: string
+        required: true
+      responses:
+        '201':
+          description: To tag room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To untag room
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: deleteV1RoomsIdTags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: To untag room
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/rooms/agent_assign_another_agent:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To allow agent assign another agent
+      description: 'Scopes :admin, :supervisor'
+      operationId: putV1RoomsAgentAssignAnotherAgent
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+        required: true
+      responses:
+        '200':
+          description: To allow agent assign another agent
+          content: {}
+  /v1/rooms:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Rooms
+      summary: To list/search rooms
+      description: 'Scopes :admin, :supervisor, :agent, :bot'
+      operationId: getV1Rooms
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - campaign
+              - unassigned
+              - assigned
+              - resolved
+        - name: sessions
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - open
+                - expiring
+                - expired
+        - name: tags
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: user_ids
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: channels
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - wa
+                - fb
+                - email
+                - telegram
+                - qontak
+                - livechat_dot_com
+                - ig
+                - line
+                - twitter
+                - web_chat
+        - name: untagged
+          in: query
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+      responses:
+        '200':
+          description: To list/search rooms
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/webchat/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Webchat] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesWebchatBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/webchat:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Webchat] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesWebchat
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/twitter/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Twitter] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesTwitterBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/twitter:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Twitter] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesTwitter
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/line/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[LINE] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesLineBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/line:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[LINE] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesLine
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/telegram/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Telegram] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesTelegramBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/telegram:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Telegram] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesTelegram
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/instagram/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Instagram] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesInstagramBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - image
+                    - text
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: Required if type is one of image
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/instagram:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Instagram] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesInstagram
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - image
+                    - text
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: Required if type is one of image
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/email/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Email] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesEmailBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                cc:
+                  type: array
+                  items:
+                    type: string
+                bcc:
+                  type: array
+                  items:
+                    type: string
+                reply_to:
+                  type: array
+                  items:
+                    type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                text:
+                  type: string
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/email:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Email] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesEmail
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                cc:
+                  type: array
+                  items:
+                    type: string
+                bcc:
+                  type: array
+                  items:
+                    type: string
+                reply_to:
+                  type: array
+                  items:
+                    type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                text:
+                  type: string
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/livechat_dot_com/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Livechat dot com] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesLivechatDotComBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/livechat_dot_com:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[Livechat dot com] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesLivechatDotCom
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/fb_messenger/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[FB Messenger] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesFbMessengerBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/fb_messenger:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[FB Messenger] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesFbMessenger
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/whatsapp/interactive_message/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[WhatsApp] Create interactive message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesWhatsappInteractiveMessageBot
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postV1MessagesWhatsappInteractiveMessageBot'
+        required: true
+      responses:
+        '201':
+          description: Create interactive message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+      x-codegen-request-body-name: V1MessagesWhatsappInteractiveMessageBot
+  /v1/messages/whatsapp/hsm:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[WhatsApp] Create hsm message'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesWhatsappHsm
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - message_template_id
+                - room_id
+              properties:
+                room_id:
+                  type: string
+                message_template_id:
+                  type: string
+        required: true
+      responses:
+        '201':
+          description: Create hsm message
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/whatsapp/bot:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[WhatsApp] Create message by bot'
+      description: 'Scopes :bot'
+      operationId: postV1MessagesWhatsappBot
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                text:
+                  type: string
+                  description: Required if type is text
+              required:
+                - room_id
+                - type
+        required: true
+      responses:
+        '201':
+          description: Create message by bot
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/messages/whatsapp:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Messages
+      summary: '[WhatsApp] Create message by agent'
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1MessagesWhatsapp
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_id
+                - type
+              properties:
+                room_id:
+                  type: string
+                local_id:
+                  type: string
+                type:
+                  type: string
+                  default: text
+                  enum:
+                    - audio
+                    - contact
+                    - document
+                    - image
+                    - location
+                    - story
+                    - system
+                    - text
+                    - video
+                    - voice
+                created_at:
+                  type: string
+                  description: iso8601(3)
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                text:
+                  type: string
+                  description: Required if type is text
+        required: true
+      responses:
+        '201':
+          description: Create message by agent
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/message_interactions:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Message Interactions
+      summary: Enable/disable message interactions
+      description: 'Scopes :admin, :bot'
+      operationId: putV1MessageInteractions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - receive_message_from_agent
+                - receive_message_from_customer
+                - broadcast_log_status
+                - status_message
+              properties:
+                receive_message_from_agent:
+                  type: boolean
+                receive_message_from_customer:
+                  type: boolean
+                broadcast_log_status:
+                  type: boolean
+                status_message:
+                  type: boolean
+                url:
+                  type: string
+                  description: Webhook URL
+        required: true
+      responses:
+        '200':
+          description: Enable/disable message interactions
+          content: {}
+    put_copy_2:
+      security:
+        - bearerAuth: []
+      tags:
+        - Message Interactions
+      summary: Enable/disable message interactions
+      description: 'Scopes :admin, :bot'
+      operationId: putV1MessageInteractions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - receive_message_from_agent
+                - receive_message_from_customer
+                - broadcast_log_status
+                - status_message
+              properties:
+                receive_message_from_agent:
+                  type: boolean
+                receive_message_from_customer:
+                  type: boolean
+                broadcast_log_status:
+                  type: boolean
+                status_message:
+                  type: boolean
+                url:
+                  type: string
+                  description: Webhook URL
+        required: true
+      responses:
+        '200':
+          description: Enable/disable message interactions
+          content: {}
+    put_copy:
+      security:
+        - bearerAuth: []
+      tags:
+        - Message Interactions
+      summary: Enable/disable message interactions
+      description: 'Scopes :admin, :bot'
+      operationId: putV1MessageInteractions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - receive_message_from_agent
+                - receive_message_from_customer
+                - broadcast_log_status
+                - status_message
+              properties:
+                receive_message_from_agent:
+                  type: boolean
+                receive_message_from_customer:
+                  type: boolean
+                broadcast_log_status:
+                  type: boolean
+                status_message:
+                  type: boolean
+                url:
+                  type: string
+                  description: Webhook URL
+        required: true
+      responses:
+        '200':
+          description: Enable/disable message interactions
+          content: {}
+  /v1/room_interactions:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Room Interactions
+      summary: Enable/disable room interactions
+      description: 'Scopes :admin, :bot'
+      operationId: putV1RoomInteractions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - room_resolved
+              properties:
+                room_resolved:
+                  type: boolean
+                url:
+                  type: string
+                  description: Webhook URL
+        required: true
+      responses:
+        '200':
+          description: Enable/disable room interactions
+          content: {}
+  /v1/waba_interactions:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Waba Interactions
+      summary: Enable/disable waba interactions
+      description: 'Scopes :admin, :bot'
+      operationId: putV1WabaInteractions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - status_template
+              properties:
+                status_template:
+                  type: boolean
+                url:
+                  type: string
+                  description: Webhook URL
+        required: true
+      responses:
+        '200':
+          description: Enable/disable waba interactions
+          content: {}
+  /v1/contacts/contact_lists/override_contact_by_upload:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Contacts
+      summary: To allow override contact name by upload
+      description: 'Scopes :admin, :supervisor'
+      operationId: putV1ContactsContactListsOverrideContactByUpload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+        required: true
+      responses:
+        '200':
+          description: To allow override contact by upload
+          content: {}
+  '/v1/contacts/contact_lists/contacts/{id}':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Contacts
+      summary: Retrieve contacts
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: getV1ContactsContactListsContactsId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Retrieve contacts
+          content: {}
+  '/v1/contacts/contact_lists/{id}':
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Contacts
+      summary: Retrieve a contact list
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: getV1ContactsContactListsId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Retrieve a contact list
+          content: {}
+  /v1/contacts/contact_lists/async:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Contacts
+      summary: Create contact list asynchronously
+      description: 'Scopes :admin, :supervisor, :has_broadcast_access'
+      operationId: postV1ContactsContactListsAsync
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - name
+                - source_type
+              properties:
+                name:
+                  type: string
+                source_type:
+                  type: string
+                  enum:
+                    - crm_dynamic
+                    - crm_static
+                    - spreadsheet
+                source_id:
+                  type: string
+                  description: Required if source_type is crm_dynamic or crm_static
+                file:
+                  type: string
+                  description: Required if source_type is spreadsheet
+                  format: binary
+        required: true
+      responses:
+        '201':
+          description: Create contact list asynchronously
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{contact_id}/contact_field/{id}':
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Contact Objects
+      summary: Edit contact field
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: putV1ContactObjectsContactIdContactFieldId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: contact_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - contact_custom_field_id
+                - name
+                - type
+                - validate
+              properties:
+                contact_custom_field_id:
+                  type: string
+                name:
+                  type: string
+                value:
+                  type: array
+                  items:
+                    type: string
+                type:
+                  type: string
+                  enum:
+                    - date
+                    - dropdown
+                    - fileupload
+                    - multiple
+                    - number
+                    - single
+                    - textarea
+                validate:
+                  type: string
+                  enum:
+                    - alphanum
+                    - date
+                    - date_time
+                    - document
+                    - email
+                    - human_name
+                    - image
+                    - number
+                    - text
+                    - url
+                    - username
+                file:
+                  type: string
+                  format: binary
+                date_value:
+                  type: string
+                  description: Required if type is date
+                  format: date-time
+        required: true
+      responses:
+        '200':
+          description: Edit contact field
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{contact_id}/contact_field':
+    post:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Create contact field
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1ContactObjectsContactIdContactField
+      parameters:
+        - name: contact_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - contact_custom_field_id
+                - name
+                - type
+                - validate
+              properties:
+                contact_custom_field_id:
+                  type: string
+                name:
+                  type: string
+                value:
+                  type: array
+                  items:
+                    type: string
+                type:
+                  type: string
+                  enum:
+                    - date
+                    - dropdown
+                    - fileupload
+                    - multiple
+                    - number
+                    - single
+                    - textarea
+                validate:
+                  type: string
+                  enum:
+                    - alphanum
+                    - date
+                    - date_time
+                    - document
+                    - email
+                    - human_name
+                    - image
+                    - number
+                    - text
+                    - url
+                    - username
+                file:
+                  type: string
+                  format: binary
+                date_value:
+                  type: string
+                  description: Required if type is date
+                  format: date-time
+        required: true
+      responses:
+        '201':
+          description: Create contact field
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/contact_objects/contact/download:
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Download contact
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsContactDownload
+      parameters:
+        - name: email
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Download contact
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/contact_objects/bulk:
+    post:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Create contact object bulk
+      description: 'scopes :admin, :supervisor, :agent'
+      operationId: postV1ContactObjectsBulk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        '201':
+          description: Create contact object bulk
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{id}':
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Get contact by id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsId
+      parameters:
+        - name: id
+          in: path
+          description: Contact handler id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get contact by id
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    put:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Update contact object
+      description: 'scopes :admin, :supervisor, :agent'
+      operationId: putV1ContactObjectsId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - full_name
+              properties:
+                full_name:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Update contact object
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/contact_objects:
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: List all contact object
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjects
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: time_offsets
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+        - name: channels
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: channel_integration_ids
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: authoritys
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: is_contact
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: List all contact object
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+    post:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Create contact object
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1ContactObjects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - account_uniq_id
+                - channel_integration_id
+                - full_name
+              properties:
+                full_name:
+                  type: string
+                channel_integration_id:
+                  type: string
+                account_uniq_id:
+                  type: string
+                channel:
+                  type: string
+        required: true
+      responses:
+        '201':
+          description: Create contact object
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{id}/agents':
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: List agent contact by id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsIdAgents
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: id
+          in: path
+          description: Contact handler id
+          required: true
+          schema:
+            type: string
+        - name: is_counted
+          in: query
+          description: Return all data count if true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List agent contact by id
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{id}/campaign':
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Get campaign by id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsIdCampaign
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: id
+          in: path
+          description: Contact handler id
+          required: true
+          schema:
+            type: string
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Get campaign by id
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{id}/conversations':
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Get conversation by id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsIdConversations
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: id
+          in: path
+          description: Contact handler id
+          required: true
+          schema:
+            type: string
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Get conversation by id
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/contact_objects/contact_field:
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: List contact field
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsContactField
+      parameters:
+        - name: contact_id
+          in: query
+          schema:
+            type: string
+        - name: contact_custom_field_id
+          in: query
+          schema:
+            type: string
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - date
+              - dropdown
+              - fileupload
+              - multiple
+              - number
+              - single
+              - textarea
+      responses:
+        '200':
+          description: List contact field
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/contact_objects/{id}/active_room':
+    get:
+      tags:
+        - Contact Objects
+      security:
+        - bearerAuth: []
+      summary: Get active room by contact id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1ContactObjectsIdActiveRoom
+      parameters:
+        - name: id
+          in: path
+          description: Contact id
+          required: true
+          schema:
+            type: string
+        - name: account_uniq_id
+          in: query
+          description: account_uniq_id
+          schema:
+            type: string
+        - name: channel_integration_id
+          in: query
+          description: channel_integration_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get active room by contact id
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/mau-limit/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general monthly Active User Limit
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralMauLimitExport
+      responses:
+        '200':
+          description: export reports general monthly Active User Limit
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/mau-limit:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general monthly Active User Limit
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralMauLimit
+      responses:
+        '200':
+          description: get reports general monthly Active User Limit
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/conversation-log/export/v2:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general conversation log - more than 2000
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralConversationLogExportV2
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+      responses:
+        '200':
+          description: export reports general conversation log - more than 2000
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/conversation-log/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general conversation log
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralConversationLogExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+      responses:
+        '200':
+          description: export reports general conversation log
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/conversation-log:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general conversation log
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralConversationLog
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: number
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - last_activity_at
+              - name
+              - account_uniq_id
+              - tags
+              - channel
+              - status
+              - created_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: get reports general conversation log
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/new-room-day/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general new room across day
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralNewRoomDayExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general new room across day
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/new-room-day:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general new room across day
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralNewRoomDay
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general new room across day
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/new-room-hour/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general new room across hour
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralNewRoomHourExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general new room across hour
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/new-room-hour:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general new room across hour
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralNewRoomHour
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general new room across hour
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-resolution-time/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general average resolution time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageResolutionTimeExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general average resolution time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-resolution-time:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general average resolution time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageResolutionTime
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general average resolution time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-waiting-time/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general average waiting time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageWaitingTimeExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general average waiting time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-waiting-time:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general average waiting time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageWaitingTime
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general average waiting time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-first-response/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general average first response time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageFirstResponseExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general average first response time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/average-first-response:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general average first response time
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAverageFirstResponse
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general average first response time
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/total-user/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports Total User
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralTotalUserExport
+      responses:
+        '200':
+          description: export reports Total User
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/total-user:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports Total User
+      description: ':admin, :supervisor'
+      operationId: getV1ReportsGeneralTotalUser
+      responses:
+        '200':
+          description: get reports Total User
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/tagv2/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general all tag
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralTagv2Export
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general all tag
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/tagv2:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general all tag
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralTagv2
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general all tag
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/all-time-historical-mau/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general all time historical mau
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAllTimeHistoricalMauExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general all time historical mau
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/all-time-historical-mau:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general all time historical mau
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralAllTimeHistoricalMau
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general all time historical mau
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/mau/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general monthly Active User
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralMauExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general monthly Active User
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/mau:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general monthly Active User
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralMau
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general monthly Active User
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/total-agent-supervisor/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general total agent & supervisor
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralTotalAgentSupervisorExport
+      responses:
+        '200':
+          description: export reports general total agent & supervisor
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/total-agent-supervisor:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general total agent & supervisor
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralTotalAgentSupervisor
+      responses:
+        '200':
+          description: get reports general total agent & supervisor
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/inbox/export:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: export reports general inbox
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralInboxExport
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: export reports general inbox
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  /v1/reports/general/inbox:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Reports
+      summary: get reports general inbox
+      description: 'Scopes :admin, :supervisor'
+      operationId: getV1ReportsGeneralInbox
+      parameters:
+        - name: time_offsets
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 7
+        - name: start_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: YYYY-MM-DD or iso8601(3)
+          schema:
+            type: string
+            format: date-time
+        - name: target_channel
+          in: query
+          schema:
+            type: string
+            enum:
+              - wa
+              - fb
+              - email
+              - telegram
+              - qontak
+              - livechat_dot_com
+              - ig
+              - line
+              - twitter
+              - web_chat
+      responses:
+        '200':
+          description: get reports general inbox
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '422':
+          description: Unprocessable Entity
+          content: {}
+  '/v1/custom_fields/{id}':
+    get:
+      tags:
+        - Custom Fields
+      security:
+        - bearerAuth: []
+      summary: Get custom fields by id
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1CustomFieldsId
+      parameters:
+        - name: id
+          in: path
+          description: Custom Fields ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get custom fields by id
+          content: {}
+    put:
+      tags:
+        - Custom Fields
+      summary: Edit custom fields
+      description: 'scopes :admin, :supervisor, :agent'
+      operationId: putV1CustomFieldsId
+      parameters:
+        - name: Authorization
+          in: header
+          description: Access Token
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                is_active:
+                  type: boolean
+                  default: true
+                is_required:
+                  type: boolean
+                  default: true
+                value:
+                  type: array
+                  items:
+                    type: string
+                validation:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Edit custom fields
+          content: {}
+  /v1/custom_fields:
+    get:
+      tags:
+        - Custom Fields
+      security:
+        - bearerAuth: []
+      summary: List all custom fields
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: getV1CustomFields
+      parameters:
+        - name: query
+          in: query
+          description: Search keyword
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: like page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: like per_page
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: cursor_direction
+          in: query
+          schema:
+            type: string
+            default: after
+            enum:
+              - before
+              - after
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - created_at
+              - updated_at
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - asc
+              - desc
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - date
+              - dropdown
+              - fileupload
+              - multiple
+              - number
+              - single
+              - textarea
+        - name: is_counted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List all custom fields
+          content: {}
+    post:
+      tags:
+        - Custom Fields
+      security:
+        - bearerAuth: []
+      summary: Create custom fields
+      description: 'Scopes :admin, :supervisor, :agent'
+      operationId: postV1CustomFields
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - is_active
+                - is_required
+                - name
+                - type
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - date
+                    - dropdown
+                    - fileupload
+                    - multiple
+                    - number
+                    - single
+                    - textarea
+                is_active:
+                  type: boolean
+                  default: true
+                is_required:
+                  type: boolean
+                  default: true
+                value:
+                  type: array
+                  items:
+                    type: string
+                validation:
+                  type: array
+                  items:
+                    type: string
+        required: true
+      responses:
+        '201':
+          description: Create custom fields
+          content: {}
+  /v1/messages/wa_cloud/bot:
+    post:
+      tags:
+        - Messages
+      summary: '[WhatsApp Cloud] Create message by bot'
+      operationId: post-POST-v1-messages-wa_cloud-bot
+      responses:
+        '200':
+          description: Create message by bot
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity
+      description: 'Scopes :bot'
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                  default: text
+                created_at:
+                  type: string
+                  description: iso8601
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+              required:
+                - room_id
+  /v1/messages/wa_cloud:
+    post:
+      tags:
+        - Messages
+      summary: '[WhatsApp Cloud] Create message by agent'
+      operationId: post-POST-v1-messages-wa_cloud
+      responses:
+        '200':
+          description: Create message by agent
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity
+      description: 'Scopes :admin, :supervisor, :agent'
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                room_id:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - audio
+                    - document
+                    - image
+                    - system
+                    - text
+                    - video
+                  default: text
+                created_at:
+                  type: string
+                  description: iso8601
+                  format: date-time
+                file:
+                  type: string
+                  description: 'Required if type is one of audio, document, image, video, and voice'
+                  format: binary
+                file_url:
+                  type: string
+                text:
+                  type: string
+                  description: Required if type is text
+              required:
+                - room_id
+    parameters: []
+  /v1/contact_block:
+    post:
+      summary: Block a Contact from Room
+      tags:
+        - Contact Block
+      responses:
+        '200':
+          description: Contact blocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-stoplight:
+                      id: e0zgxgx4qxa6i
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: x7g9vjf34eavu
+                    properties:
+                      id:
+                        type: string
+                        x-stoplight:
+                          id: rttqnrw03bmv0
+                      contact_id:
+                        type: string
+                        x-stoplight:
+                          id: fud8xk6qomecc
+                      organization_id:
+                        type: string
+                        x-stoplight:
+                          id: yccwkxb3drc37
+                      reason:
+                        type: string
+                        x-stoplight:
+                          id: 2mojsr24ici9r
+                      channel:
+                        type: string
+                        x-stoplight:
+                          id: iperipkf4ji1g
+                      account_uniq_id:
+                        type: string
+                        x-stoplight:
+                          id: 9cmoa6z1gpywe
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity
+      operationId: post-v1-contact_block
+      x-stoplight:
+        id: 3egoccga1nxqd
+      description: |-
+        Block a contact in a room.
+        Scopes :admin, :supervisor, :agent
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room_id:
+                  type: string
+                  x-stoplight:
+                    id: 6ttm8m41y3la1
+                  readOnly: true
+                reason:
+                  type: string
+                  x-stoplight:
+                    id: 277tj1w5xo3aj
+                  nullable: true
+              required:
+                - room_id
+        description: ''
+  '/v1/contact_block/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+    delete:
+      summary: Unblock Contact
+      tags:
+        - Contact Block
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-stoplight:
+                      id: 0iw7r2ivpeo4j
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: 2cvheim5vo0dp
+                    properties:
+                      status:
+                        type: string
+                        x-stoplight:
+                          id: bq0o3z8aekmtn
+      operationId: delete-v1-contact_block-id
+      x-stoplight:
+        id: 2pyltadm1kqmw
+      description: Unblock contact
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  x-stoplight:
+                    id: 6t2ppfdb981ul
+                  format: uuid
+                  readOnly: true
+                room_id:
+                  type: string
+                  x-stoplight:
+                    id: ouz54i2s2g0x0
+                  format: uuid
+                  readOnly: true
+              required:
+                - id
+                - room_id
+        description: 'id: contact id, room_id: room id'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    postOauthToken:
+      required:
+        - username
+        - password
+        - grant_type
+        - client_id
+        - client_secret
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        grant_type:
+          type: string
+          default: password
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      description: Generate authorization token
+    postV1BroadcastsWhatsappDirect:
+      type: object
+      description: Create Whatsapp Broadcast Direct
+      x-examples: {}
+      required:
+        - to_name
+        - to_number
+        - message_template_id
+        - channel_integration_id
+        - language
+      properties:
+        to_name:
+          type: string
+        to_number:
+          type: string
+        message_template_id:
+          type: string
+          description: message template id or message template name
+        channel_integration_id:
+          type: string
+        language:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              enum:
+                - en
+                - id
+        parameters:
+          type: object
+          properties:
+            header:
+              type: object
+              required:
+                - format
+                - params
+              properties:
+                format:
+                  type: string
+                  enum:
+                    - DOCUMENT
+                    - VIDEO
+                    - IMAGE
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - key
+                      - value
+                    properties:
+                      key:
+                        type: string
+                        enum:
+                          - url
+                          - filename
+                      value:
+                        type: string
+            body:
+              type: array
+              items:
+                type: object
+                required:
+                  - key
+                  - value_text
+                  - value
+                properties:
+                  key:
+                    type: string
+                  value_text:
+                    type: string
+                  value:
+                    type: string
+            buttons:
+              type: array
+              items:
+                type: object
+                required:
+                  - index
+                  - type
+                  - value
+                properties:
+                  index:
+                    type: string
+                  type:
+                    type: string
+                  value:
+                    type: string
+        name:
+          type: string
+          x-stoplight:
+            id: dix64bbooc9rn
+          description: 'custom broadcast name, will be generated automatically by system if not set'
+    putV1BroadcastsWhatsapp:
+      required:
+        - channel_integration_id
+        - contact_list_id
+        - id
+        - message_template_id
+        - name
+        - parameters
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        message_template_id:
+          type: string
+        contact_list_id:
+          type: string
+        channel_integration_id:
+          type: string
+        execute_type:
+          type: string
+          default: immediately
+          enum:
+            - immediately
+            - specific
+        send_at:
+          type: string
+          format: date-time
+        division_id:
+          type: string
+        parameters:
+          required:
+            - body
+          type: object
+          properties:
+            header:
+              required:
+                - format
+                - params
+              type: object
+              properties:
+                format:
+                  type: string
+                params:
+                  type: array
+                  items:
+                    required:
+                      - key
+                      - value
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        type: string
+            body:
+              type: array
+              items:
+                required:
+                  - key
+                  - value
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+            buttons:
+              type: array
+              items:
+                required:
+                  - index
+                  - type
+                  - value
+                type: object
+                properties:
+                  index:
+                    type: string
+                  type:
+                    type: string
+                  value:
+                    type: string
+      description: Update Whatsapp Broadcast
+    postV1BroadcastsWhatsapp:
+      required:
+        - channel_integration_id
+        - contact_list_id
+        - message_template_id
+        - name
+        - parameters
+      type: object
+      properties:
+        name:
+          type: string
+        message_template_id:
+          type: string
+        contact_list_id:
+          type: string
+        channel_integration_id:
+          type: string
+        execute_type:
+          type: string
+          default: immediately
+          enum:
+            - immediately
+            - specific
+        send_at:
+          type: string
+          format: date-time
+        division_id:
+          type: string
+        parameters:
+          required:
+            - body
+          type: object
+          properties:
+            header:
+              required:
+                - format
+                - params
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum:
+                    - DOCUMENT
+                    - VIDEO
+                    - IMAGE
+                params:
+                  type: array
+                  items:
+                    required:
+                      - key
+                      - value
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        enum:
+                          - url
+                          - filename
+                      value:
+                        type: string
+            body:
+              type: array
+              items:
+                required:
+                  - key
+                  - value
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+            buttons:
+              type: array
+              items:
+                required:
+                  - index
+                  - type
+                  - value
+                type: object
+                properties:
+                  index:
+                    type: string
+                  type:
+                    type: string
+                  value:
+                    type: string
+      description: Create Whatsapp Broadcast
+    postV1TemplatesWhatsappHsmChat:
+      required:
+        - attributes
+        - category
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        attributes:
+          type: array
+          items:
+            required:
+              - components
+              - language
+            type: object
+            properties:
+              components:
+                type: array
+                items:
+                  required:
+                    - type
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    text:
+                      type: string
+                    format:
+                      type: string
+              language:
+                type: string
+      description: Create HSM Chat Template
+    postV1TemplatesWhatsapp:
+      required:
+        - attributes
+        - category
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        attributes:
+          type: array
+          items:
+            required:
+              - components
+              - language
+            type: object
+            properties:
+              components:
+                type: array
+                items:
+                  required:
+                    - type
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    text:
+                      type: string
+                    format:
+                      type: string
+                    example:
+                      type: object
+                      properties:
+                        body_text:
+                          type: array
+                          items:
+                            type: string
+                        header_text:
+                          type: array
+                          items:
+                            type: string
+                        header_handle:
+                          type: array
+                          items:
+                            type: string
+                    buttons:
+                      type: array
+                      items:
+                        required:
+                          - text
+                          - type
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                          text:
+                            type: string
+                          url:
+                            type: string
+                          phone_number:
+                            type: string
+                          example:
+                            type: array
+                            items:
+                              type: string
+              language:
+                type: string
+      description: Create Whatsapp Template
+    postV1MessagesWhatsappInteractiveMessageBot:
+      required:
+        - interactive
+        - room_id
+        - type
+      type: object
+      properties:
+        room_id:
+          type: string
+        type:
+          type: string
+        interactive:
+          required:
+            - body
+          type: object
+          properties:
+            header:
+              required:
+                - format
+              type: object
+              properties:
+                format:
+                  type: string
+                text:
+                  type: string
+                link:
+                  type: string
+                filename:
+                  type: string
+            body:
+              type: string
+            buttons:
+              type: array
+              items:
+                required:
+                  - id
+                  - title
+                type: object
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+            lists:
+              required:
+                - button
+                - sections
+              type: object
+              properties:
+                button:
+                  type: string
+                sections:
+                  type: array
+                  items:
+                    required:
+                      - rows
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      rows:
+                        type: array
+                        items:
+                          required:
+                            - id
+                            - title
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            title:
+                              type: string
+                            description:
+                              type: string
+      description: Create interactive message by bot

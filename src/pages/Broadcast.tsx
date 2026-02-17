@@ -132,170 +132,187 @@ export default function Broadcast() {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 lg:p-6">
+    <div className="space-y-4 sm:space-y-6 p-4 lg:p-8 bg-gradient-to-br from-background via-accent/10 to-background min-h-[calc(100vh-4rem)]">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Broadcast</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground">Send targeted WhatsApp messages via Qontak</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">Broadcast</h1>
+        <p className="text-sm text-muted-foreground">Send targeted WhatsApp messages via Qontak</p>
       </div>
 
-      <Tabs defaultValue="compose">
-        <TabsList>
-          <TabsTrigger value="compose">Compose</TabsTrigger>
-          <TabsTrigger value="history">History ({logs.length})</TabsTrigger>
+      <Tabs defaultValue="compose" className="space-y-6">
+        <TabsList className="glass p-1 border-0 bg-background/30 w-auto inline-flex">
+          <TabsTrigger value="compose" className="gap-1.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">Compose</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1.5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">History ({logs.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="compose" className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-3">
+        <TabsContent value="compose" className="space-y-4 mt-0">
+          <div className="grid gap-6 lg:grid-cols-3">
             {/* Filters */}
-            <Card className="lg:col-span-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm"><Filter className="h-4 w-4" /> Target Filters</CardTitle>
+            <Card className="lg:col-span-1 glass border-0 shadow-lg h-fit">
+              <CardHeader className="pb-3 border-b border-white/10">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold"><Filter className="h-4 w-4 text-primary" /> Target Filters</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All Status</SelectItem>{statusOptions.map((s) => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterSource} onValueChange={setFilterSource}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All Sources</SelectItem>{sourceOptions.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="b2c">B2C</SelectItem><SelectItem value="b2b">B2B</SelectItem></SelectContent>
-                </Select>
-                <Select value={filterPic} onValueChange={setFilterPic}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="PIC" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All PIC</SelectItem>{picList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterArea} onValueChange={setFilterArea}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Area" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All Areas</SelectItem>{areas.map((a) => <SelectItem key={a!} value={a!}>{a}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterContacted} onValueChange={setFilterContacted}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Response" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="answered">Answered</SelectItem><SelectItem value="unanswered">Unanswered</SelectItem></SelectContent>
-                </Select>
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">Last Contacted Range</Label>
-                  <div className="grid grid-cols-2 gap-1.5 mt-1">
-                    <Input type="date" className="h-7 text-xs" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                    <Input type="date" className="h-7 text-xs" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-3">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All Status</SelectItem>{statusOptions.map((s) => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={filterSource} onValueChange={setFilterSource}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="Source" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All Sources</SelectItem>{sourceOptions.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="Type" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="b2c">B2C</SelectItem><SelectItem value="b2b">B2B</SelectItem></SelectContent>
+                  </Select>
+                  <Select value={filterPic} onValueChange={setFilterPic}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="PIC" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All PIC</SelectItem>{picList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={filterArea} onValueChange={setFilterArea}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="Area" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All Areas</SelectItem>{areas.map((a) => <SelectItem key={a!} value={a!}>{a}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={filterContacted} onValueChange={setFilterContacted}>
+                    <SelectTrigger className="bg-background/50 border-white/10"><SelectValue placeholder="Response" /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="answered">Answered</SelectItem><SelectItem value="unanswered">Unanswered</SelectItem></SelectContent>
+                  </Select>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Last Contacted Range</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input type="date" className="h-9 text-xs bg-background/50 border-white/10" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                      <Input type="date" className="h-9 text-xs bg-background/50 border-white/10" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-muted p-3 mt-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold">{recipients.length}</span>
-                    <span className="text-xs text-muted-foreground">recipients</span>
+                <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 mt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <span className="text-2xl font-bold block leading-none">{recipients.length}</span>
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">recipients matched</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Message Composer */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm"><Send className="h-4 w-4" /> Message Template</CardTitle>
+            <Card className="lg:col-span-2 glass border-0 shadow-lg flex flex-col">
+              <CardHeader className="pb-3 border-b border-white/10">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold"><Send className="h-4 w-4 text-primary" /> Message Template</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {templateVars.map((v) => (
-                    <button key={v} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] text-secondary-foreground hover:bg-accent transition-colors"
-                      onClick={() => setMessage((prev) => prev + ' ' + v)}>
-                      {v}
-                    </button>
-                  ))}
+              <CardContent className="space-y-4 pt-4 flex-1">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Variables</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {templateVars.map((v) => (
+                      <button key={v} className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => setMessage((prev) => prev + ' ' + v)}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
                 <Textarea
                   placeholder="Type your broadcast message here... Use template variables above."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  rows={5}
+                  rows={8}
+                  className="bg-background/50 border-white/10 focus:border-primary/30 resize-none"
                 />
 
                 {/* Image Attachment */}
-                <div className="space-y-2">
-                  <Label className="text-xs flex items-center gap-1.5">
-                    <ImagePlus className="h-3.5 w-3.5" /> Image Attachment (Optional)
+                <div className="space-y-3 pt-2 border-t border-white/5">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <ImagePlus className="h-4 w-4 text-primary" /> Image Attachment (Optional)
                   </Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <Input
                       placeholder="Paste image URL (https://...)"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      className="text-xs"
+                      className="bg-background/50 border-white/10"
                     />
                     {imageUrl && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setImageUrl('')}>
-                        <X className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => setImageUrl('')}>
+                        <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                   {imageUrl && (
-                    <div className="relative w-24 h-24 rounded-md border border-border overflow-hidden bg-muted">
+                    <div className="relative w-32 h-32 rounded-lg border border-white/10 overflow-hidden bg-muted/50 shdoaw-sm">
                       <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
                     </div>
                   )}
-                  <p className="text-[10px] text-muted-foreground">
-                    For Qontak broadcast: image will be sent as header media. URL must be publicly accessible.
+                  <p className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-md border border-white/5">
+                    Note: For Qontak broadcast, the image will be sent as header media. The URL must be publicly accessible.
                   </p>
                 </div>
 
                 {/* Preview */}
                 {message && recipients.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground">Preview (sample recipients):</p>
-                    <div className="space-y-1.5 max-h-40 overflow-auto">
-                      {recipients.slice(0, 3).map((r) => (
-                        <div key={r.id} className="rounded-md border border-border bg-muted/50 p-2.5 text-xs">
-                          <p className="font-medium text-muted-foreground mb-1">To: {r.name} ({r.phone})</p>
-                          <p className="whitespace-pre-wrap">{previewMessage(r)}</p>
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <Label className="text-sm font-medium">Preview (sample)</Label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {recipients.slice(0, 2).map((r) => (
+                        <div key={r.id} className="rounded-xl border border-white/10 bg-background/40 p-3 text-sm shadow-sm relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-primary/20"></div>
+                          <p className="font-semibold text-foreground mb-1.5 flex justify-between">
+                            <span>{r.name}</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">{r.phone}</span>
+                          </p>
+                          <p className="whitespace-pre-wrap text-muted-foreground text-xs leading-relaxed">{previewMessage(r)}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <Button className="w-full gap-2" disabled={!message.trim() || recipients.length === 0} onClick={() => setConfirmOpen(true)}>
-                  <Send className="h-4 w-4" /> Send Broadcast to {recipients.length} recipients
-                </Button>
+                <div className="pt-4 mt-auto">
+                  <Button className="w-full gap-2 shadow-lg shadow-primary/20 text-base py-6" disabled={!message.trim() || recipients.length === 0} onClick={() => setConfirmOpen(true)}>
+                    <Send className="h-5 w-5" /> Send Broadcast to {recipients.length} recipients
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="history">
-          <Card>
+        <TabsContent value="history" className="mt-0">
+          <Card className="glass border-0 shadow-lg overflow-hidden">
             <CardContent className="p-0">
               <ScrollArea className="h-[calc(100vh-16rem)]">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-card border-b border-border">
-                    <tr className="text-left text-xs text-muted-foreground">
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Sent By</th>
-                      <th className="px-3 py-2">Recipients</th>
-                      <th className="px-3 py-2">Message</th>
-                      <th className="px-3 py-2">Mode</th>
-                      <th className="px-3 py-2">Status</th>
+                  <thead className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-white/10">
+                    <tr className="text-left text-xs text-muted-foreground font-semibold">
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Sent By</th>
+                      <th className="px-4 py-3">Recipients</th>
+                      <th className="px-4 py-3">Message Snippet</th>
+                      <th className="px-4 py-3">Mode</th>
+                      <th className="px-4 py-3">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((log) => (
-                      <tr key={log.id} className="border-b border-border hover:bg-muted/50">
-                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{format(new Date(log.sent_at), 'dd MMM yyyy HH:mm')}</td>
-                        <td className="px-3 py-2">{log.sent_by}</td>
-                        <td className="px-3 py-2"><Badge variant="secondary">{log.total_recipients}</Badge></td>
-                        <td className="px-3 py-2 max-w-xs truncate text-muted-foreground">{log.message_template}</td>
-                        <td className="px-3 py-2"><Badge variant="outline" className="text-[10px]">{log.mode}</Badge></td>
-                        <td className="px-3 py-2">
-                          <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> {log.delivery_status}</span>
+                      <tr key={log.id} className="border-b border-white/5 hover:bg-primary/5 transition-colors">
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap font-mono text-xs">{format(new Date(log.sent_at), 'dd MMM yyyy HH:mm')}</td>
+                        <td className="px-4 py-3">{log.sent_by}</td>
+                        <td className="px-4 py-3"><Badge variant="secondary" className="bg-primary/10 text-primary">{log.total_recipients}</Badge></td>
+                        <td className="px-4 py-3 max-w-xs truncate text-muted-foreground">{log.message_template}</td>
+                        <td className="px-4 py-3"><Badge variant="outline" className="text-[10px] uppercase">{log.mode}</Badge></td>
+                        <td className="px-4 py-3">
+                          <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium"><CheckCircle2 className="h-3.5 w-3.5" /> {log.delivery_status}</span>
                         </td>
                       </tr>
                     ))}
                     {logs.length === 0 && (
-                      <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">No broadcast history yet</td></tr>
+                      <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No broadcast history yet</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -307,27 +324,42 @@ export default function Broadcast() {
 
       {/* Confirmation Modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Confirm Broadcast</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="rounded-lg bg-muted p-3 space-y-1">
-              <p className="text-sm"><strong>Recipients:</strong> {recipients.length} leads</p>
-              <p className="text-sm"><strong>Sent by:</strong> {user?.email}</p>
-              {imageUrl && <p className="text-sm"><strong>Image:</strong> Attached ✓</p>}
+        <DialogContent className="glass border-0 sm:max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2 text-amber-500"><AlertTriangle className="h-5 w-5" /> Confirm Broadcast</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-xl bg-muted/50 p-4 space-y-2 border border-white/5">
+              <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                <span className="text-sm text-muted-foreground">Recipients</span>
+                <span className="font-bold text-lg">{recipients.length} <span className="text-sm font-normal text-muted-foreground">leads</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Sent by</span>
+                <span className="text-sm font-medium">{user?.email}</span>
+              </div>
+              {imageUrl && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Attachment</span>
+                  <span className="text-sm font-medium text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Image Included</span>
+                </div>
+              )}
             </div>
+
             {imageUrl && (
-              <div className="w-20 h-20 rounded-md border border-border overflow-hidden">
-                <img src={imageUrl} alt="Broadcast" className="w-full h-full object-cover" />
+              <div className="aspect-video w-full rounded-lg border border-white/10 overflow-hidden bg-black/20">
+                <img src={imageUrl} alt="Broadcast" className="w-full h-full object-contain" />
               </div>
             )}
-            <div className="rounded-md border border-border p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Message Template:</p>
-              <p className="text-sm whitespace-pre-wrap">{message}</p>
+
+            <div className="rounded-lg border border-white/10 p-3 bg-background/50">
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Message Preview</p>
+              <ScrollArea className="h-32 rounded-md bg-muted/30 p-2">
+                <p className="text-sm whitespace-pre-wrap">{message}</p>
+              </ScrollArea>
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-            <Button onClick={() => sendBroadcast.mutate()} disabled={sendBroadcast.isPending} className="gap-1.5">
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild><Button variant="outline" className="glass bg-transparent">Cancel</Button></DialogClose>
+            <Button onClick={() => sendBroadcast.mutate()} disabled={sendBroadcast.isPending} className="gap-2 shadow-lg shadow-primary/20">
               {sendBroadcast.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Confirm & Send
             </Button>

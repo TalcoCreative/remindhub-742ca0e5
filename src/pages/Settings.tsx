@@ -6,16 +6,23 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2, Copy, CheckCircle2, Webhook, AlertCircle, ToggleLeft } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import {
+  Key, Globe, Shield, UserPlus, Loader2, Users, MoreHorizontal, Trash2, Copy, CheckCircle2,
+  Webhook, AlertCircle, ToggleLeft, Database, RefreshCw, Eye, EyeOff, Save, Info, AlertTriangle
+} from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { seedDatabase } from '@/utils/seedData';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
@@ -35,7 +42,23 @@ export default function Settings() {
   const [qontakRefreshToken, setQontakRefreshToken] = useState('');
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
+
   const [switchingLive, setSwitchingLive] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [channels, setChannels] = useState<any[]>([]);
+
+  // Qontak OAuth State
+  const [showQontakLogin, setShowQontakLogin] = useState(false);
+  const [qontakLogin, setQontakLogin] = useState({ username: '', password: '', client_id: '', client_secret: '' });
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [showSecrets, setShowSecrets] = useState(false);
+
+  const handleSeed = async () => {
+    if (!confirm('This will insert dummy data into your database. Continue?')) return;
+    setSeeding(true);
+    await seedDatabase();
+    setSeeding(false);
+  };
 
   const { data: isAdmin } = useQuery({
     queryKey: ['is-admin'],
@@ -162,6 +185,56 @@ export default function Settings() {
     setSaving(false);
   };
 
+  const handleQontakLogin = async () => {
+    if (!qontakLogin.username || !qontakLogin.password || !qontakLogin.client_id || !qontakLogin.client_secret) {
+      toast({ title: 'Missing Fields', description: 'Please fill in all fields.', variant: 'destructive' });
+      return;
+    }
+
+    setLoggingIn(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('qontak-auth', {
+        body: qontakLogin,
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.access_token) {
+        setQontakToken(data.access_token);
+        if (data.refresh_token) setQontakRefreshToken(data.refresh_token);
+
+        // Auto-save
+        await upsertSetting('qontak_token', data.access_token);
+        if (data.refresh_token) await upsertSetting('qontak_refresh_token', data.refresh_token);
+
+        toast({ title: 'Login Successful', description: 'Tokens retrieved and saved.' });
+        setShowQontakLogin(false);
+        // Clear sensitive data
+        setQontakLogin({ username: '', password: '', client_id: '', client_secret: '' });
+        qc.invalidateQueries({ queryKey: ['app-settings'] });
+      }
+    } catch (err: any) {
+      toast({ title: 'Login Failed', description: err.message, variant: 'destructive' });
+    }
+    setLoggingIn(false);
+  };
+
+  // Sync History
+  const [syncing, setSyncing] = useState(false);
+  const handleSyncQontak = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-qontak');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Sync Complete', description: `Synced ${data.synced} chats from Qontak.` });
+    } catch (err: any) {
+      toast({ title: 'Sync Failed', description: err.message, variant: 'destructive' });
+    }
+    setSyncing(false);
+  };
+
   // Toggle mode (dummy <-> live)
   const handleToggleMode = async () => {
     const newMode = qontakMode === 'live' ? 'dummy' : 'live';
@@ -219,72 +292,128 @@ export default function Settings() {
   const isLive = qontakMode === 'live';
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
+    <div className="space-y-6 p-4 lg:p-8 bg-gradient-to-br from-background via-accent/10 to-background min-h-[calc(100vh-4rem)]">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure RemindHub integrations and preferences</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your team, integrations, and system preferences.</p>
       </div>
 
-      <Tabs defaultValue="users">
-        <TabsList>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="whatsapp">WhatsApp Integration</TabsTrigger>
+      {/* Mode Toggle Card */}
+      <Card className={cn("glass border-0 shadow-lg", isLive ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-blue-500')}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <ToggleLeft className="h-5 w-5 text-primary" />
+                System Mode:
+                {isLive ? (
+                  <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white ml-2">LIVE</Badge>
+                ) : (
+                  <Badge variant="secondary" className="ml-2">DUMMY MODE</Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="mt-1 text-xs sm:text-sm">
+                {isLive
+                  ? 'Connected to Qontak API. Real-time data sync active.'
+                  : 'Dummy mode active. No external API calls will be made.'
+                }
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              {(validating || switchingLive) && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+              <Switch
+                checked={isLive}
+                onCheckedChange={handleToggleMode}
+                disabled={switchingLive || settingsLoading}
+                className="data-[state=checked]:bg-emerald-500"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {!savedToken && !isLive && (
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/20 px-4 py-2.5 text-xs sm:text-sm text-amber-500">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Please save your Qontak Token before switching to Live Mode.</span>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      <Tabs defaultValue="team" className="space-y-6">
+        <TabsList className="glass p-1 border-0 bg-background/30 w-auto inline-flex">
+          <TabsTrigger value="team" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+            <Users className="h-4 w-4" /> Team
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+            <Globe className="h-4 w-4" /> Integrations
+          </TabsTrigger>
+          <TabsTrigger value="developer" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+            <Database className="h-4 w-4" /> Developer
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="users" className="mt-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" /> Team Members</CardTitle>
-                  <CardDescription>Manage users and their roles.</CardDescription>
-                </div>
-                {isAdmin && (
-                  <Button size="sm" className="gap-1.5" onClick={() => setShowInvite(true)}>
-                    <UserPlus className="h-4 w-4" /> Add User
-                  </Button>
-                )}
-              </div>
+        <TabsContent value="team" className="space-y-4 mt-0">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowInvite(true)} className="gap-2 shadow-lg shadow-primary/20">
+              <UserPlus className="h-4 w-4" /> Invite Member
+            </Button>
+          </div>
+
+          <Card className="glass border-0 shadow-lg overflow-hidden">
+            <CardHeader className="pb-4 border-b border-white/5">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-5 w-5 text-primary" /> Team Members
+              </CardTitle>
+              <CardDescription>Manage user roles and access.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {usersLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-transparent border-white/5">
+                      <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead className="text-right">Leads</TableHead>
-                      <TableHead className="text-right">Chats</TableHead>
+                      <TableHead className="text-right">Activity</TableHead>
                       {isAdmin && <TableHead className="w-10" />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map((u) => (
-                      <TableRow key={u.id}>
+                      <TableRow key={u.id} className="hover:bg-primary/5 border-white/5 transition-colors">
                         <TableCell>
-                          <div>
-                            <p className="font-medium">{u.display_name || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground">{u.user_id.slice(0, 8)}...</p>
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                              {u.display_name ? u.display_name.substring(0, 2) : 'U'}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{u.display_name || 'Unknown User'}</p>
+                              <p className="text-xs text-muted-foreground">ID: {u.user_id.slice(0, 8)}...</p>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={u.roles[0] === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                          <Badge variant={u.roles[0] === 'admin' ? 'default' : 'secondary'} className={cn("capitalize", u.roles[0] === 'admin' ? "bg-primary/20 text-primary hover:bg-primary/30" : "")}>
                             {u.roles[0] || 'operator'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">{u.leadsHandled}</TableCell>
-                        <TableCell className="text-right">{u.chatsHandled}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs text-muted-foreground">Leads: {u.leadsHandled}</span>
+                            <span className="text-xs text-muted-foreground">Chats: {u.chatsHandled}</span>
+                          </div>
+                        </TableCell>
                         {isAdmin && (
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-background/80">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                               <DropdownMenuContent align="end">
+                              <DropdownMenuContent align="end" className="glass border-0">
                                 {['admin', 'operator', 'viewer'].map((role) => (
                                   <DropdownMenuItem key={role} onClick={() => updateRole.mutate({ userId: u.user_id, newRole: role })}>
                                     Set as <span className="ml-1 capitalize font-medium">{role}</span>
@@ -292,229 +421,213 @@ export default function Settings() {
                                   </DropdownMenuItem>
                                 ))}
                                 {u.user_id !== session?.user?.id && (
-                                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget({ id: u.user_id, name: u.display_name || 'this user' })}>
+                                  <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={() => setDeleteTarget({ id: u.user_id, name: u.display_name || 'this user' })}>
                                     <Trash2 className="h-4 w-4 mr-1" /> Delete User
                                   </DropdownMenuItem>
                                 )}
-                               </DropdownMenuContent>
+                              </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         )}
                       </TableRow>
                     ))}
-                    {users.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No users found.</TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Shield className="h-4 w-4 text-primary" /> Role Definitions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { role: 'Admin', desc: 'Full access to all modules, settings, and user management.' },
-                { role: 'Operator', desc: 'Access to inbox, leads, and operations. Cannot change settings.' },
-                { role: 'Viewer', desc: 'Read-only access to dashboard and reports.' },
-              ].map((r) => (
-                <div key={r.role} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                  <Badge variant="secondary">{r.role}</Badge>
-                  <p className="text-sm text-muted-foreground">{r.desc}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        <TabsContent value="whatsapp" className="mt-4 space-y-4">
-          {/* Mode Toggle Card */}
-          <Card className={isLive ? 'border-green-500/50 bg-green-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <ToggleLeft className="h-4 w-4" />
-                    Mode: {isLive ? (
-                      <Badge className="bg-green-600 hover:bg-green-700 text-white">🟢 LIVE</Badge>
-                    ) : (
-                      <Badge variant="secondary">🔵 DUMMY</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {isLive
-                      ? 'Terhubung ke Mekari Qontak API. Semua data real-time.'
-                      : 'Mode dummy aktif. Data tidak terhubung ke API Qontak.'
-                    }
-                  </CardDescription>
+        <TabsContent value="integrations" className="space-y-6 mt-0">
+          <Alert className="glass bg-primary/5 border-primary/20 text-primary">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Qontak Integration</AlertTitle>
+            <AlertDescription className="text-xs opacity-90">
+              Configure credentials to enable WhatsApp messaging.
+              {savedToken && <span className="ml-2 font-bold text-emerald-500">● Token Saved</span>}
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="glass border-0 shadow-lg">
+              <CardHeader className="pb-3 border-b border-white/5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Key className="h-4 w-4 text-primary" /> Credentials
+                    </CardTitle>
+                    <CardDescription>Manually enter or login to get token.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setShowQontakLogin(true)} className="h-8 text-xs glass bg-background/50">
+                    Login to Qontak
+                  </Button>
                 </div>
-                <div className="flex items-center gap-2">
-                  {(validating || switchingLive) && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <Switch
-                    checked={isLive}
-                    onCheckedChange={handleToggleMode}
-                    disabled={switchingLive || settingsLoading}
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">Access Token <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      type={showSecrets ? "text" : "password"}
+                      value={qontakToken}
+                      onChange={(e) => setQontakToken(e.target.value)}
+                      placeholder="Paste Qontak Access Token"
+                      className="pr-10 bg-background/50 border-white/10 font-mono text-xs"
+                    />
+                    <button type="button" onClick={() => setShowSecrets(!showSecrets)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSecrets ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Refresh Token</Label>
+                  <Input
+                    type={showSecrets ? "text" : "password"}
+                    value={qontakRefreshToken}
+                    onChange={(e) => setQontakRefreshToken(e.target.value)}
+                    placeholder="Paste Qontak Refresh Token"
+                    className="bg-background/50 border-white/10 font-mono text-xs"
                   />
                 </div>
-              </div>
-            </CardHeader>
-            {!savedToken && !isLive && (
-              <CardContent className="pt-0">
-                <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  Simpan Token Qontak terlebih dahulu untuk bisa switch ke Live mode.
-                </div>
-              </CardContent>
-            )}
-          </Card>
 
-          {/* Webhook URL */}
-          <Card className="border-primary/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Webhook className="h-4 w-4 text-primary" /> Webhook URL
-              </CardTitle>
-              <CardDescription>
-                Paste URL ini di Mekari Qontak → Settings → Message Interactions → Webhook URL.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Input readOnly value={WEBHOOK_URL} className="font-mono text-xs bg-muted" />
-                <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={handleCopyWebhook}>
-                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Aktifkan event: <code className="rounded bg-muted px-1">receive_message_from_customer</code> dan <code className="rounded bg-muted px-1">receive_message_from_agent</code>
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Qontak Credentials */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Key className="h-4 w-4 text-primary" /> Qontak Credentials
-              </CardTitle>
-              <CardDescription>
-                Dapatkan Token dari Mekari Qontak → Settings → API → Access Token. 
-                Token ini digunakan untuk mengirim pesan outbound dan validasi koneksi.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Token <span className="text-destructive">*</span></Label>
-                <Input
-                  type="password"
-                  placeholder="Paste token dari Qontak"
-                  value={qontakToken}
-                  onChange={(e) => setQontakToken(e.target.value)}
-                />
-                {savedToken && (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Token tersimpan
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Refresh Token</Label>
-                <Input
-                  type="password"
-                  placeholder="Paste refresh token dari Qontak (opsional)"
-                  value={qontakRefreshToken}
-                  onChange={(e) => setQontakRefreshToken(e.target.value)}
-                />
-                {savedRefreshToken && (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Refresh token tersimpan
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  disabled={!qontakToken || saving}
-                  onClick={handleSaveCredentials}
-                  className="gap-1.5"
-                >
-                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save Credentials
-                </Button>
-                {savedToken && (
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={() => handleSaveCredentials()} disabled={saving || !qontakToken} className="flex-1 gap-2 shadow-md shadow-primary/20">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Save
+                  </Button>
                   <Button
                     variant="outline"
-                    disabled={validating}
+                    disabled={validating || !savedToken}
                     onClick={async () => {
                       setValidating(true);
                       try {
-                        const { data, error } = await supabase.functions.invoke('validate-qontak', {
-                          body: { token: savedToken },
-                        });
+                        const { data, error } = await supabase.functions.invoke('validate-qontak', { body: { token: savedToken } });
                         if (error) throw error;
                         if (data?.valid) {
-                          toast({ title: '✅ Token Valid', description: 'Koneksi ke Qontak berhasil.' });
+                          toast({ title: '✅ Valid', description: 'Token is active.' });
+                          if (data.data?.data) setChannels(data.data.data);
                         } else {
-                          toast({ title: '❌ Token Invalid', description: data?.error || 'Token tidak valid.', variant: 'destructive' });
+                          toast({ title: '❌ Invalid', description: data?.error || 'Token invalid.', variant: 'destructive' });
                         }
                       } catch (err: any) {
                         toast({ title: 'Error', description: err.message, variant: 'destructive' });
                       }
                       setValidating(false);
                     }}
-                    className="gap-1.5"
+                    className="gap-2 glass bg-background/50"
                   >
-                    {validating && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Test Connection
+                    {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Test
                   </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
 
-          {/* Provider Support */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Globe className="h-4 w-4 text-primary" /> Provider Support</CardTitle>
+                {channels.length > 0 && (
+                  <div className="rounded-lg border border-white/10 bg-black/20 p-3 mt-4 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Connected Channels</p>
+                    {channels.map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between text-xs">
+                        <span className="font-mono">{c.settings?.phone_number || c.id}</span>
+                        <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/20">Connected</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <Card className="glass border-0 shadow-lg">
+                <CardHeader className="pb-3 border-b border-white/5">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Webhook className="h-4 w-4 text-primary" /> Webhook Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="rounded-lg bg-black/40 border border-white/10 p-3 space-y-2">
+                    <Label className="text-xs text-muted-foreground">Your Webhook URL</Label>
+                    <div className="flex items-center gap-2">
+                      <Input readOnly value={WEBHOOK_URL} className="font-mono text-[10px] h-8 bg-transparent border-none text-green-400 focus-visible:ring-0 px-0" />
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 hover:bg-white/10" onClick={handleCopyWebhook}>
+                        {copied ? <CheckCircle2 className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Paste this URL in <strong>Mekari Qontak Settings</strong>.<br />
+                    Enable events: <code className="text-primary">receive_message_from_customer</code>, <code className="text-primary">receive_message_from_agent</code>
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass border-0 shadow-lg bg-amber-500/5 border-l-4 border-l-amber-500">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-amber-500 flex items-center gap-2"><Database className="h-4 w-4" /> Data Sync</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground mb-3">Sync recent chats from Qontak to your local database.</p>
+                  <Button variant="outline" size="sm" onClick={handleSyncQontak} disabled={syncing || !savedToken} className="w-full glass bg-background/50 hover:bg-background/80">
+                    {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <RefreshCw className="h-3.5 w-3.5 mr-2" />}
+                    Sync History
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="developer" className="mt-0">
+          <Card className="glass border-0 shadow-lg border-l-4 border-l-destructive/50">
+            <CardHeader className="pb-4 border-b border-white/5">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" /> Developer Zone
+              </CardTitle>
+              <CardDescription>
+                Advanced tools for system maintenance and debugging.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Webhook otomatis mendeteksi format payload dari:</p>
-              <div className="mt-3 flex gap-2 flex-wrap">
-                <Badge>Mekari Qontak</Badge>
-                <Badge variant="outline">Meta WABA</Badge>
-                <Badge variant="outline">Custom JSON</Badge>
+            <CardContent className="pt-6 space-y-4">
+              <div className="rounded-xl border border-white/10 bg-background/40 p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-sm">Seed Database</h3>
+                  <p className="text-xs text-muted-foreground max-w-sm">
+                    Populate database with dummy leads, chats, and assignments.
+                    Useful for testing UI without real data.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={handleSeed} disabled={seeding} className="gap-2 border-dashed border-white/20 hover:bg-primary/5 hover:text-primary">
+                  {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                  Populate Data
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Invite User Dialog */}
+      {/* Invite Modal */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1">
+        <DialogContent className="glass border-0 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogDescription>Create a new user account.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
               <Label>Display Name</Label>
-              <Input value={inviteForm.display_name} onChange={(e) => setInviteForm({ ...inviteForm, display_name: e.target.value })} placeholder="John Doe" />
+              <Input value={inviteForm.display_name} onChange={(e) => setInviteForm({ ...inviteForm, display_name: e.target.value })} className="bg-background/50 border-white/10" />
             </div>
-            <div className="space-y-1">
-              <Label>Email *</Label>
-              <Input type="email" required value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} placeholder="user@company.com" />
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} className="bg-background/50 border-white/10" />
             </div>
-            <div className="space-y-1">
-              <Label>Password *</Label>
-              <Input type="password" required minLength={6} value={inviteForm.password} onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })} placeholder="Min 6 characters" />
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <Input type="password" value={inviteForm.password} onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })} className="bg-background/50 border-white/10" />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={inviteForm.role} onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={inviteForm.role} onValueChange={(val) => setInviteForm({ ...inviteForm, role: val })}>
+                <SelectTrigger className="bg-background/50 border-white/10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="operator">Operator</SelectItem>
@@ -522,26 +635,63 @@ export default function Settings() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleInvite} disabled={inviting || !inviteForm.email || !inviteForm.password} className="w-full">
-              {inviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create User
-            </Button>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInvite(false)} className="glass bg-transparent">Cancel</Button>
+            <Button onClick={handleInvite} disabled={inviting || !inviteForm.email} className="gap-2 shadow-lg shadow-primary/20">
+              {inviting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Send Invitation
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete User Confirmation */}
+      {/* Qontak Login Modal */}
+      <Dialog open={showQontakLogin} onOpenChange={setShowQontakLogin}>
+        <DialogContent className="glass border-0 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login to Qontak</DialogTitle>
+            <DialogDescription>Enter your credentials to generate an access token.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input value={qontakLogin.username} onChange={(e) => setQontakLogin({ ...qontakLogin, username: e.target.value })} className="bg-background/50 border-white/10" />
+            </div>
+            <div className="space-y-1">
+              <Label>Password</Label>
+              <Input type="password" value={qontakLogin.password} onChange={(e) => setQontakLogin({ ...qontakLogin, password: e.target.value })} className="bg-background/50 border-white/10" />
+            </div>
+            <div className="space-y-1">
+              <Label>Client ID</Label>
+              <Input value={qontakLogin.client_id} onChange={(e) => setQontakLogin({ ...qontakLogin, client_id: e.target.value })} className="bg-background/50 border-white/10" />
+            </div>
+            <div className="space-y-1">
+              <Label>Client Secret</Label>
+              <Input type="password" value={qontakLogin.client_secret} onChange={(e) => setQontakLogin({ ...qontakLogin, client_secret: e.target.value })} className="bg-background/50 border-white/10" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleQontakLogin} disabled={loggingIn} className="w-full gap-2 shadow-lg shadow-primary/20">
+              {loggingIn && <Loader2 className="h-4 w-4 animate-spin" />} Get Token
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Alert */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="glass border-0">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Delete User</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteTarget && deleteUser.mutate(deleteTarget.id)}>
-              {deleteUser.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Delete
+            <AlertDialogCancel className="glass bg-transparent">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg" onClick={() => deleteTarget && deleteUser.mutate(deleteTarget.id)}>
+              {deleteUser.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

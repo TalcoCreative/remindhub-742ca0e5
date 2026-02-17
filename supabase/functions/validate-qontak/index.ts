@@ -25,31 +25,73 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate token by calling Qontak API - get profile/integrations
-    const res = await fetch("https://service-chat.qontak.com/api/open/v1/integrations", {
+    // 1. Try Mekari API (New Standard)
+    let isValid = false;
+    let responseData: any = {};
+    let errorDetails = "";
+
+    console.log("Validating with Mekari API...");
+    const resMekari = await fetch("https://api.mekari.com/v1/qontak/chat/rooms?limit=5", {
       headers: {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      return new Response(JSON.stringify({ valid: true, data }), {
+    if (resMekari.ok) {
+      isValid = true;
+      responseData = await resMekari.json();
+    } else {
+      errorDetails = `Mekari API: ${resMekari.status} ${resMekari.statusText}`;
+      console.log(`Mekari API failed (${resMekari.status}), trying legacy...`);
+
+      // 2. Fallback: Try Legacy Qontak API
+      // Only if Mekari failed (likely 401 if using old token)
+      const resLegacy = await fetch("https://service-chat.qontak.com/api/open/v1/rooms?limit=5", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (resLegacy.ok) {
+        isValid = true;
+        responseData = await resLegacy.json();
+        console.log("Legacy API validation successful.");
+      } else {
+        errorDetails += ` | Legacy API: ${resLegacy.status} ${resLegacy.statusText}`;
+        const legacyText = await resLegacy.text();
+        console.error("Legacy API error:", legacyText);
+      }
+    }
+
+    if (isValid) {
+      // Extract unique channels found to simulate the "Connected Channels" response
+      const uniqueChannels = [...new Set((responseData.data || []).map((r: any) => r.channel))].map(ch => ({
+        id: ch || 'whatsapp',
+        settings: { phone_number: 'Connected' }
+      }));
+
+      if (uniqueChannels.length === 0) {
+        uniqueChannels.push({ id: 'whatsapp', settings: { phone_number: 'Account Active' } });
+      }
+
+      return new Response(JSON.stringify({
+        valid: true,
+        data: { data: uniqueChannels }
+      }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else {
-      const errorText = await res.text();
-      console.error("Qontak API error:", res.status, errorText);
-      return new Response(JSON.stringify({ valid: false, error: `Invalid token (${res.status})` }), {
+      return new Response(JSON.stringify({ valid: false, error: `Invalid token. ${errorDetails}` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Validation error:", err);
-    return new Response(JSON.stringify({ valid: false, error: "Validation failed" }), {
+    return new Response(JSON.stringify({ valid: false, error: "Validation failed: " + err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

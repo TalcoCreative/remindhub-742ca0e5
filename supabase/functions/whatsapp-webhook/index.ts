@@ -30,7 +30,10 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("Webhook received:", JSON.stringify(body));
+    console.log("------------------------------------------");
+    console.log("WEBHOOK RECEIVED AT:", new Date().toISOString());
+    console.log("PAYLOAD:", JSON.stringify(body, null, 2));
+    console.log("------------------------------------------");
 
     // ===== Qontak Webhook Validation =====
     // Qontak sends a POST with "verify_info" to validate the webhook URL.
@@ -54,6 +57,18 @@ Deno.serve(async (req) => {
       const { phone, name, message, sender, timestamp, mediaUrl, mediaType, roomId, channel } = event;
 
       if (!phone || !message) {
+        // Special handling for system events that might imply existing chat update
+        if (event.eventType === "room_resolved" && event.roomId) {
+          console.log("Processing room resolution:", event.roomId);
+          await supabase.from("chats").update({ status: "resolved", resolved_at: new Date().toISOString() }).eq("room_id", event.roomId);
+          continue;
+        }
+        if (event.eventType === "message_status" && event.status) {
+          console.log("Processing message status:", event.status);
+          // TODO: Update specific message status if we stored external_id
+          continue;
+        }
+
         console.log("Skipping event - missing phone or message:", event);
         continue;
       }
@@ -73,7 +88,7 @@ Deno.serve(async (req) => {
       // Find or create chat
       let { data: chat } = await supabase
         .from("chats")
-        .select("id")
+        .select("id, room_id")
         .eq("contact_phone", normalizedPhone)
         .maybeSingle();
 
@@ -88,8 +103,9 @@ Deno.serve(async (req) => {
             status: "new",
             unread: msgSender === "customer" ? 1 : 0,
             channel: channel || "whatsapp",
+            room_id: roomId || null,
           })
-          .select("id")
+          .select("id, room_id")
           .single();
 
         if (chatErr) {
@@ -98,7 +114,7 @@ Deno.serve(async (req) => {
         }
         chat = newChat;
       } else {
-        // Update existing chat with latest message
+        // Update existing chat with latest message and potentially room_id
         const updateData: Record<string, unknown> = {
           last_message: msgText,
           last_timestamp: msgTimestamp,
@@ -109,6 +125,11 @@ Deno.serve(async (req) => {
         if (msgSender === "customer") {
           updateData.unread = 1;
         }
+        // Always update room_id if we have it and it's missing or different (though usually consistent per phone)
+        if (roomId && chat.room_id !== roomId) {
+          updateData.room_id = roomId;
+        }
+
         await supabase.from("chats").update(updateData).eq("id", chat.id);
       }
 
@@ -150,6 +171,9 @@ interface WebhookEvent {
   mediaType?: string;
   roomId?: string;
   channel?: string;
+  eventType?: "message" | "room_resolved" | "message_status";
+  status?: string;
+  messageId?: string;
 }
 
 // ─── Payload Normalization ────────────────────────────────────────────────────
@@ -177,7 +201,7 @@ function normalizePayload(body: any): WebhookEvent[] {
     const phone = body.room?.account_uniq_id || "";
     const name = body.room?.name || body.sender?.name || "";
     const isAgent = body.sender_type === "agent" ||
-                    body.participant_type === "agent";
+      body.participant_type === "agent";
     const content = extractQontakContent(body);
 
     // Map Qontak channel codes to our channel names
@@ -257,6 +281,37 @@ function normalizePayload(body: any): WebhookEvent[] {
   // ===== Format 6: Wrapped in { events: [...] } =====
   if (body.events && Array.isArray(body.events)) {
     return body.events.filter((e: any) => e.phone && e.message);
+  }
+
+  // ===== Format 7: Room Interaction Service (room_resolved) =====
+  // Payload: { service_name: "room", event_name: "resolved", ... room: { ... } }
+  if (body.service_name === "room" && body.event_name === "resolved") {
+    const room = body.room || {};
+    return [{
+      phone: room.account_uniq_id || "",
+      name: room.name || "",
+      message: "[system] Room resolved",
+      sender: "system",
+      timestamp: body.created_at,
+      roomId: room.id,
+      eventType: "room_resolved"
+    } as any];
+  }
+
+  // ===== Format 8: WABA Status (statuses) =====
+  // Payload: { statuses: [ { id: "msg_id", status: "read", ... } ] }
+  if (body.statuses && Array.isArray(body.statuses)) {
+    // We can iterate and update message statuses here, or just log them.
+    // For now, let's map them to a recognizable event type.
+    return body.statuses.map((s: any) => ({
+      phone: s.recipient_id || "", // might need normalization
+      message: `[system] Message ${s.status}`,
+      sender: "system",
+      timestamp: s.timestamp,
+      messageId: s.id,
+      status: s.status,
+      eventType: "message_status"
+    } as any));
   }
 
   console.log("Unknown payload format, attempting best-effort parse");

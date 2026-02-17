@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import DashboardDetail from "./pages/DashboardDetail";
-import WhatsAppInbox from "./pages/WhatsAppInbox";
+import Inbox from "./pages/Inbox";
 import Leads from "./pages/Leads";
 import Contacts from "./pages/Contacts";
 import Broadcast from "./pages/Broadcast";
@@ -38,7 +38,7 @@ function ProtectedRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard-detail" element={<DashboardDetail />} />
-        <Route path="/inbox" element={<WhatsAppInbox />} />
+        <Route path="/inbox" element={<Inbox />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/broadcast" element={<Broadcast />} />

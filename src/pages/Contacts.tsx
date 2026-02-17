@@ -238,15 +238,15 @@ export default function Contacts() {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-4 p-4 lg:p-6">
+    <div className="space-y-4 p-4 lg:p-6 bg-gradient-to-br from-background via-accent/10 to-background min-h-[calc(100vh-4rem)]">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
-          <p className="text-sm text-muted-foreground">Master contact database — {contacts.length} total</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">Contacts</h1>
+          <p className="text-sm text-muted-foreground">Master database — {contacts.length} contacts</p>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+          <Button variant="outline" size="sm" className="gap-1.5 glass bg-background/50 hover:bg-background/80" onClick={() => {
             const template = 'name,phone,type,company,area,source\nJohn Doe,628123456789,b2c,PT Example,Jakarta,manual\n';
             const blob = new Blob([template], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -255,39 +255,39 @@ export default function Contacts() {
           }}>
             <Download className="h-4 w-4" /> Template CSV
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileInputRef.current?.click()}>
+          <Button variant="outline" size="sm" className="gap-1.5 glass bg-background/50 hover:bg-background/80" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4" /> Import CSV
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add Contact</Button>
+              <Button size="sm" className="gap-1.5 shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /> Add Contact</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="glass border-0">
               <DialogHeader><DialogTitle>Add Contact</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                  <div><Label>Phone *</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="628..." /></div>
+                  <div><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-background/50" /></div>
+                  <div><Label>Phone *</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="628..." className="bg-background/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Type</Label>
                     <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent><SelectItem value="b2c">B2C</SelectItem><SelectItem value="b2b">B2B</SelectItem></SelectContent>
                     </Select>
                   </div>
                   <div><Label>Source</Label>
                     <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>{sourceOptions.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Company</Label><Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} /></div>
-                  <div><Label>Area</Label><Input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} /></div>
+                  <div><Label>Company</Label><Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="bg-background/50" /></div>
+                  <div><Label>Area</Label><Input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="bg-background/50" /></div>
                 </div>
-                <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+                <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="bg-background/50" /></div>
               </div>
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
@@ -305,40 +305,45 @@ export default function Contacts() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 sm:h-9 text-sm" />
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 bg-background/50 border-white/10 focus:border-primary/30 transition-all shadow-sm"
+            />
           </div>
-          <Button variant={hasActiveFilter ? 'default' : 'outline'} size="sm" className="gap-1 text-xs" onClick={() => setShowFilters(!showFilters)}>
+          <Button variant={hasActiveFilter ? 'default' : 'outline'} size="sm" className="gap-1 text-xs glass bg-background/50" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Filters</span>
           </Button>
           {hasActiveFilter && (
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setFilterType('all'); setFilterSource('all'); setFilterContacted('all'); setFilterPic('all'); setFilterArea('all'); }}>
+            <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-destructive/10 hover:text-destructive" onClick={() => { setFilterType('all'); setFilterSource('all'); setFilterContacted('all'); setFilterPic('all'); setFilterArea('all'); }}>
               <X className="h-3.5 w-3.5" />
             </Button>
           )}
-          <Badge variant="secondary" className="text-[10px] sm:text-xs">{filteredContacts.length}</Badge>
+          <Badge variant="secondary" className="text-[10px] sm:text-xs glass bg-primary/10 text-primary">{filteredContacts.length}</Badge>
         </div>
 
         {showFilters && (
-          <Card>
+          <Card className="glass border-0 shadow-lg animate-in slide-in-from-top-2">
             <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-3">
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs bg-background/50 border-0"><SelectValue placeholder="Type" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="b2c">B2C</SelectItem><SelectItem value="b2b">B2B</SelectItem></SelectContent>
               </Select>
               <Select value={filterSource} onValueChange={setFilterSource}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs bg-background/50 border-0"><SelectValue placeholder="Source" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All Sources</SelectItem>{sourceOptions.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={filterContacted} onValueChange={setFilterContacted}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Contacted" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs bg-background/50 border-0"><SelectValue placeholder="Contacted" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="yes">Contacted</SelectItem><SelectItem value="no">Not Contacted</SelectItem></SelectContent>
               </Select>
               <Select value={filterPic} onValueChange={setFilterPic}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="PIC" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs bg-background/50 border-0"><SelectValue placeholder="PIC" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All PIC</SelectItem>{picList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={filterArea} onValueChange={setFilterArea}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Area" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs bg-background/50 border-0"><SelectValue placeholder="Area" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All Areas</SelectItem>{areas.map((a) => <SelectItem key={a!} value={a!}>{a}</SelectItem>)}</SelectContent>
               </Select>
             </CardContent>
@@ -347,48 +352,48 @@ export default function Contacts() {
       </div>
 
       {/* Contacts Table */}
-      <Card>
+      <Card className="glass border-0 shadow-lg overflow-hidden">
         <ScrollArea className="h-[calc(100vh-18rem)]">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-card border-b border-border">
+              <thead className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-white/10 shadow-sm">
                 <tr className="text-left text-[10px] sm:text-xs text-muted-foreground">
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('name')}><span className="flex items-center">Name<SortIcon col="name" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden sm:table-cell" onClick={() => toggleSort('phone')}><span className="flex items-center">Phone<SortIcon col="phone" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort('type')}><span className="flex items-center">Type<SortIcon col="type" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('source')}><span className="flex items-center">Source<SortIcon col="source" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden lg:table-cell" onClick={() => toggleSort('area')}><span className="flex items-center">Area<SortIcon col="area" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none hidden lg:table-cell" onClick={() => toggleSort('assigned_pic')}><span className="flex items-center">PIC<SortIcon col="assigned_pic" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 cursor-pointer select-none" onClick={() => toggleSort('chat_id')}><span className="flex items-center"><span className="hidden sm:inline">Contacted?</span><span className="sm:hidden">Chat</span><SortIcon col="chat_id" /></span></th>
-                  <th className="px-2 sm:px-3 py-2 text-right">Actions</th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none font-semibold text-foreground/70" onClick={() => toggleSort('name')}><span className="flex items-center gap-1">Name<SortIcon col="name" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none hidden sm:table-cell font-semibold text-foreground/70" onClick={() => toggleSort('phone')}><span className="flex items-center gap-1">Phone<SortIcon col="phone" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none hidden md:table-cell font-semibold text-foreground/70" onClick={() => toggleSort('type')}><span className="flex items-center gap-1">Type<SortIcon col="type" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none font-semibold text-foreground/70" onClick={() => toggleSort('source')}><span className="flex items-center gap-1">Source<SortIcon col="source" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none hidden lg:table-cell font-semibold text-foreground/70" onClick={() => toggleSort('area')}><span className="flex items-center gap-1">Area<SortIcon col="area" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none hidden lg:table-cell font-semibold text-foreground/70" onClick={() => toggleSort('assigned_pic')}><span className="flex items-center gap-1">PIC<SortIcon col="assigned_pic" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 cursor-pointer select-none font-semibold text-foreground/70" onClick={() => toggleSort('chat_id')}><span className="flex items-center gap-1"><span className="hidden sm:inline">Contacted?</span><span className="sm:hidden">Chat</span><SortIcon col="chat_id" /></span></th>
+                  <th className="px-2 sm:px-3 py-3 text-right font-semibold text-foreground/70">Actions</th>
                 </tr>
               </thead>
               <tbody>
-              {filteredContacts.map((c) => {
+                {filteredContacts.map((c) => {
                   return (
-                    <tr key={c.id} className="border-b border-border hover:bg-muted/50 transition-colors text-xs sm:text-sm">
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
-                        <p className="font-medium truncate max-w-[120px] sm:max-w-none">{c.name}</p>
+                    <tr key={c.id} className="border-b border-white/5 hover:bg-primary/5 transition-colors text-xs sm:text-sm group">
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5">
+                        <p className="font-semibold truncate max-w-[120px] sm:max-w-none text-foreground group-hover:text-primary transition-colors">{c.name}</p>
                         <p className="text-[10px] text-muted-foreground sm:hidden">{c.phone}</p>
                       </td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden sm:table-cell">{c.phone}</td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{c.type?.toUpperCase()}</Badge></td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 capitalize text-muted-foreground">{c.source}</td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden lg:table-cell">{c.area || '—'}</td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-muted-foreground hidden lg:table-cell">{c.assigned_pic || '—'}</td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-muted-foreground hidden sm:table-cell font-mono">{c.phone}</td>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 hidden md:table-cell"><Badge variant="outline" className="text-[10px] uppercase bg-background/30 backdrop-blur-sm">{c.type?.toUpperCase()}</Badge></td>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 capitalize text-muted-foreground">{c.source}</td>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-muted-foreground hidden lg:table-cell">{c.area || '—'}</td>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-muted-foreground hidden lg:table-cell">{c.assigned_pic || '—'}</td>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5">
                         {c.chat_id
-                          ? <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-success"><CheckCircle2 className="h-3 w-3" /> <span className="hidden sm:inline">Yes</span></span>
-                          : <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-warning"><XCircle className="h-3 w-3" /> <span className="hidden sm:inline">No</span></span>
+                          ? <span className="flex items-center gap-1 text-[10px] sm:text-xs text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit"><CheckCircle2 className="h-3 w-3" /> <span className="hidden sm:inline">Yes</span></span>
+                          : <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground/50 px-2 py-0.5"><XCircle className="h-3 w-3" /> <span className="hidden sm:inline">No</span></span>
                         }
                       </td>
-                      <td className="px-2 sm:px-3 py-1.5 sm:py-2">
-                        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-                          <Button variant="default" size="sm" className="h-6 text-[10px] gap-0.5 px-1.5 sm:px-2" onClick={() => contactNow(c)}>
-                              <MessageCircle className="h-3 w-3" /> <span className="hidden sm:inline">Contact</span>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="default" size="sm" className="h-7 text-[10px] gap-1 px-2.5 shadow-sm hover:shadow-md transition-all" onClick={() => contactNow(c)}>
+                            <MessageCircle className="h-3 w-3" /> <span className="hidden sm:inline">Chat</span>
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditContact(c)}>
-                            <Edit className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/80" onClick={() => setEditContact(c)}>
+                            <Edit className="h-3 w-3 text-muted-foreground" />
                           </Button>
                         </div>
                       </td>
@@ -396,7 +401,12 @@ export default function Contacts() {
                   );
                 })}
                 {filteredContacts.length === 0 && (
-                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">No contacts found</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <Filter className="h-8 w-8 opacity-20" />
+                      <p>No contacts found matching your filters.</p>
+                    </div>
+                  </td></tr>
                 )}
               </tbody>
             </table>
@@ -406,33 +416,33 @@ export default function Contacts() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editContact} onOpenChange={(o) => !o && setEditContact(null)}>
-        <DialogContent>
+        <DialogContent className="glass border-0">
           <DialogHeader><DialogTitle>Edit Contact</DialogTitle></DialogHeader>
           {editContact && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Name</Label><Input defaultValue={editContact.name} onChange={(e) => setEditContact({ ...editContact, name: e.target.value })} /></div>
-                <div><Label>Phone</Label><Input defaultValue={editContact.phone} onChange={(e) => setEditContact({ ...editContact, phone: e.target.value })} /></div>
+                <div><Label>Name</Label><Input defaultValue={editContact.name} onChange={(e) => setEditContact({ ...editContact, name: e.target.value })} className="bg-background/50" /></div>
+                <div><Label>Phone</Label><Input defaultValue={editContact.phone} onChange={(e) => setEditContact({ ...editContact, phone: e.target.value })} className="bg-background/50" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Type</Label>
                   <Select defaultValue={editContact.type || 'b2c'} onValueChange={(v) => setEditContact({ ...editContact, type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="b2c">B2C</SelectItem><SelectItem value="b2b">B2B</SelectItem></SelectContent>
                   </Select>
                 </div>
                 <div><Label>PIC</Label>
                   <Select defaultValue={editContact.assigned_pic || ''} onValueChange={(v) => setEditContact({ ...editContact, assigned_pic: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select PIC" /></SelectTrigger>
+                    <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select PIC" /></SelectTrigger>
                     <SelectContent>{picList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Company</Label><Input defaultValue={editContact.company || ''} onChange={(e) => setEditContact({ ...editContact, company: e.target.value })} /></div>
-                <div><Label>Area</Label><Input defaultValue={editContact.area || ''} onChange={(e) => setEditContact({ ...editContact, area: e.target.value })} /></div>
+                <div><Label>Company</Label><Input defaultValue={editContact.company || ''} onChange={(e) => setEditContact({ ...editContact, company: e.target.value })} className="bg-background/50" /></div>
+                <div><Label>Area</Label><Input defaultValue={editContact.area || ''} onChange={(e) => setEditContact({ ...editContact, area: e.target.value })} className="bg-background/50" /></div>
               </div>
-              <div><Label>Notes</Label><Textarea defaultValue={editContact.notes || ''} onChange={(e) => setEditContact({ ...editContact, notes: e.target.value })} rows={2} /></div>
+              <div><Label>Notes</Label><Textarea defaultValue={editContact.notes || ''} onChange={(e) => setEditContact({ ...editContact, notes: e.target.value })} rows={2} className="bg-background/50" /></div>
             </div>
           )}
           <DialogFooter>

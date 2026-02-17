@@ -12,7 +12,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
-import { CalendarIcon, ArrowLeft, TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, TrendingUp, TrendingDown, Minus, Loader2, Users, Database, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import type { DateRange } from 'react-day-picker';
@@ -128,80 +128,96 @@ export default function DashboardDetail() {
   };
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
+    <div className="space-y-6 p-4 lg:p-8 bg-gradient-to-br from-background via-accent/10 to-background min-h-[calc(100vh-4rem)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+          <Link to="/"><Button variant="ghost" size="icon" className="hover:bg-primary/10"><ArrowLeft className="h-5 w-5" /></Button></Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard Detail</h1>
-            <p className="text-sm text-muted-foreground">Deep dive analytics & charts</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">Analytics Deep Dive</h1>
+            <p className="text-sm text-muted-foreground">Comprehensive performance metrics and trends.</p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="glass border-0 shadow-lg sticky top-4 z-30 backdrop-blur-xl">
         <CardContent className="flex flex-wrap items-center gap-3 p-3">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <CalendarIcon className="h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-2 glass bg-background/50 border-white/10 hover:bg-background/80">
+                <CalendarIcon className="h-4 w-4 text-primary" />
                 {dateRange?.from ? `${format(dateRange.from, 'dd/MM/yy')} - ${dateRange.to ? format(dateRange.to, 'dd/MM/yy') : '...'}` : 'Select dates'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <div className="flex flex-wrap gap-1 border-b p-2">
+            <PopoverContent className="w-auto p-0 glass border-0" align="start">
+              <div className="flex flex-wrap gap-1 border-b border-white/10 p-2 bg-black/20">
                 {presets.map((p) => (
-                  <Button key={p.label} variant="ghost" size="sm" className="text-xs h-7" onClick={() => setDateRange(p.getRange())}>
+                  <Button key={p.label} variant="ghost" size="sm" className="text-xs h-7 hover:bg-primary/20 hover:text-primary" onClick={() => setDateRange(p.getRange())}>
                     {p.label}
                   </Button>
                 ))}
               </div>
-              <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} />
+              <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} className="bg-background/95" />
             </PopoverContent>
           </Popover>
+          <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="Source" /></SelectTrigger>
+            <SelectTrigger className="w-[130px] h-9 glass bg-background/50 border-white/10"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sources</SelectItem>
               {Object.entries(sourceLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-[130px] h-9 glass bg-background/50 border-white/10"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               {Object.entries(statusLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[100px] h-9"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectTrigger className="w-[100px] h-9 glass bg-background/50 border-white/10"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="b2c">B2C</SelectItem>
               <SelectItem value="b2b">B2B</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant={compareMode ? 'default' : 'outline'} size="sm" onClick={() => setCompareMode(!compareMode)}>
-            Compare Period
-          </Button>
+          <div className="ml-auto">
+            <Button
+              variant={compareMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCompareMode(!compareMode)}
+              className={cn("gap-2 transition-all", compareMode ? "shadow-lg shadow-primary/20" : "glass bg-transparent border-primary/20 text-primary hover:bg-primary/10")}
+            >
+              {compareMode ? <TrendingUp className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+              Compare
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: 'Total Leads', value: stats.current.count, prev: stats.previous.count },
-          { title: 'Total KG', value: stats.current.totalKg, prev: stats.previous.totalKg, fmt: (v: number) => `${v.toLocaleString()} kg` },
-          { title: 'Deals Closed', value: stats.current.deals, prev: stats.previous.deals },
-          { title: 'Revenue', value: stats.current.revenue, prev: stats.previous.revenue, fmt: (v: number) => `Rp ${(v / 1e6).toFixed(0)}M` },
-        ].map((s) => (
-          <Card key={s.title}>
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">{s.title}</p>
-              <p className="mt-1 text-2xl font-bold">{s.fmt ? s.fmt(s.value) : s.value}</p>
-              <CompareIndicator current={s.value} previous={s.prev} />
-              {compareMode && <p className="text-[10px] text-muted-foreground">prev: {s.fmt ? s.fmt(s.prev) : s.prev}</p>}
+          { title: 'Total Leads', value: stats.current.count, prev: stats.previous.count, icon: Users },
+          { title: 'Total Collected', value: stats.current.totalKg, prev: stats.previous.totalKg, fmt: (v: number) => `${v.toLocaleString()} kg`, icon: Database },
+          { title: 'Deals Closed', value: stats.current.deals, prev: stats.previous.deals, icon: CheckCircle2 },
+          { title: 'Est. Revenue', value: stats.current.revenue, prev: stats.previous.revenue, fmt: (v: number) => `Rp ${(v / 1e6).toFixed(1)}M`, icon: TrendingUp },
+        ].map((s, i) => (
+          <Card key={s.title} className="glass border-0 shadow-lg hover:translate-y-[-2px] transition-transform">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{s.title}</p>
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <s.icon className="h-4 w-4" /> {/* Note: Ensure icons are imported */}
+                </div>
+              </div>
+              <p className="text-3xl font-bold gradient-text">{s.fmt ? s.fmt(s.value) : s.value}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <CompareIndicator current={s.value} previous={s.prev} />
+                {compareMode && <p className="text-[10px] text-muted-foreground bg-black/20 px-1.5 py-0.5 rounded">prev: {s.fmt ? s.fmt(s.prev) : s.prev}</p>}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -210,82 +226,96 @@ export default function DashboardDetail() {
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Leads over time */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Leads Over Time</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={leadsOverTime}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
-                <Legend />
-                <Line type="monotone" dataKey="count" name="Leads" stroke="hsl(188,90%,27%)" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="deals" name="Deals" stroke="hsl(152,60%,40%)" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+        <Card className="glass border-0 shadow-lg">
+          <CardHeader className="pb-2 border-b border-white/5">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-primary" /> Growth Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={leadsOverTime}>
+                  <defs>
+                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(188,90%,27%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(188,90%,27%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-white/5" vertical={false} />
+                  <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} />
+                  <Legend iconType="circle" />
+                  <Line type="monotone" dataKey="count" name="Leads" stroke="hsl(188,90%,27%)" strokeWidth={3} dot={{ r: 4, fill: 'hsl(188,90%,27%)', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="deals" name="Deals" stroke="hsl(152,60%,40%)" strokeWidth={3} dot={{ r: 4, fill: 'hsl(152,60%,40%)', strokeWidth: 2, stroke: '#fff' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* KG over time */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">KG Collected Over Time</CardTitle></CardHeader>
-          <CardContent>
+        <Card className="glass border-0 shadow-lg">
+          <CardHeader className="pb-2 border-b border-white/5"><CardTitle className="text-base flex items-center gap-2"><Database className="h-4 w-4 text-primary" /> Volume Collected (KG)</CardTitle></CardHeader>
+          <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={leadsOverTime}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
-                <Bar dataKey="kg" name="KG" fill="hsl(188,90%,27%)" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-white/5" vertical={false} />
+                <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} />
+                <Tooltip cursor={{ fill: 'white', opacity: 0.05 }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                <Bar dataKey="kg" name="KG" fill="url(#colorKg)" radius={[4, 4, 0, 0]}>
+                  <defs>
+                    <linearGradient id="colorKg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(188,90%,27%)" stopOpacity={1} />
+                      <stop offset="100%" stopColor="hsl(188,90%,27%)" stopOpacity={0.6} />
+                    </linearGradient>
+                  </defs>
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* By Source (pie) */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Leads by Source</CardTitle></CardHeader>
-          <CardContent>
+        <Card className="glass border-0 shadow-lg">
+          <CardHeader className="pb-2 border-b border-white/5"><CardTitle className="text-base">Acquisition Source</CardTitle></CardHeader>
+          <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={bySource} dataKey="leads" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, value }) => `${name}: ${value}`}>
-                  {bySource.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie
+                  data={bySource}
+                  dataKey="leads"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {bySource.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="rgba(0,0,0,0.5)" strokeWidth={1} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* By Source (bar - KG & Value) */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">KG & Value by Source</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={bySource} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis type="number" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis type="category" dataKey="name" width={80} className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
-                <Legend />
-                <Bar dataKey="kg" name="KG" fill="hsl(188,90%,27%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
         {/* Status distribution */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2"><CardTitle className="text-base">Lead Status Distribution</CardTitle></CardHeader>
-          <CardContent>
+        <Card className="glass border-0 shadow-lg">
+          <CardHeader className="pb-2 border-b border-white/5"><CardTitle className="text-base">Pipeline Status</CardTitle></CardHeader>
+          <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={byStatus}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
-                <Bar dataKey="value" name="Leads" fill="hsl(210,80%,55%)" radius={[4, 4, 0, 0]}>
+              <BarChart data={byStatus} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-white/5" horizontal={false} />
+                <XAxis type="number" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" width={100} className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'white', opacity: 0.05 }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                <Bar dataKey="value" name="Leads" radius={[0, 4, 4, 0]} barSize={20}>
                   {byStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Bar>
               </BarChart>
