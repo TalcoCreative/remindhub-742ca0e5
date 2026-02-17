@@ -1,4 +1,4 @@
-import { generateMekariHeaders } from "../_shared/mekari-auth.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -31,41 +31,51 @@ Deno.serve(async (req) => {
             });
         }
 
-        // Fetch Messages using HMAC Auth
-        const mekariPath = `/v1/qontak/chat/rooms/${roomId}/histories?limit=${limit}`;
-        const mekariHeaders = await generateMekariHeaders("GET", mekariPath);
+        // Get Bearer token from app_settings
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-        let msgsRes = await fetch(`https://api.mekari.com${mekariPath}`, {
-            headers: mekariHeaders,
-        });
+        const { data: settings } = await supabase
+            .from("app_settings")
+            .select("key, value")
+            .in("key", ["qontak_token"]);
 
-        let rawText = await msgsRes.text();
-        let msgsData: any = {};
+        const token = settings?.find((s: any) => s.key === "qontak_token")?.value;
 
-        if (!msgsRes.ok) {
-            console.warn(`Mekari API failed (${msgsRes.status}): ${rawText.substring(0, 200)}`);
-            
-            // Fallback to Legacy API
-            const legacyPath = `/api/open/v1/rooms/${roomId}/histories?limit=${limit}`;
-            const legacyHeaders = await generateMekariHeaders("GET", legacyPath);
-            msgsRes = await fetch(`https://service-chat.qontak.com${legacyPath}`, {
-                headers: legacyHeaders,
+        if (!token) {
+            return new Response(JSON.stringify({ error: "Qontak token not configured" }), {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
-            rawText = await msgsRes.text();
-
-            if (!msgsRes.ok) {
-                console.error("Both APIs failed:", rawText);
-                return new Response(JSON.stringify({
-                    error: "Failed to fetch messages (Both APIs)",
-                    details: rawText,
-                    status: msgsRes.status
-                }), {
-                    status: msgsRes.status,
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
-            }
         }
 
+        const headers = {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+        };
+
+        // Fetch Messages
+        const msgsRes = await fetch(
+            `https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/histories?limit=${limit}`,
+            { headers }
+        );
+
+        const rawText = await msgsRes.text();
+
+        if (!msgsRes.ok) {
+            console.error(`Qontak API failed (${msgsRes.status}): ${rawText.substring(0, 300)}`);
+            return new Response(JSON.stringify({
+                error: "Failed to fetch messages",
+                details: rawText,
+                status: msgsRes.status
+            }), {
+                status: msgsRes.status,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        let msgsData: any = {};
         try {
             msgsData = rawText ? JSON.parse(rawText) : {};
         } catch (e) {
@@ -93,11 +103,11 @@ Deno.serve(async (req) => {
             };
         }).reverse();
 
-        console.log(`Returning ${messages.length} messages (HMAC Auth)`);
+        console.log(`Returning ${messages.length} messages (Bearer Token)`);
 
         return new Response(JSON.stringify({
             data: messages,
-            meta: { count: messages.length, source: "Mekari HMAC Auth", room_id: roomId }
+            meta: { count: messages.length, source: "Bearer Token", room_id: roomId }
         }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
