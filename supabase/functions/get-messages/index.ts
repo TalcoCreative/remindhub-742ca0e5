@@ -54,10 +54,9 @@ Deno.serve(async (req) => {
             });
         }
 
-        // 2. Fetch Messages from Qontak (Endpoint: /rooms/{id}/messages)
-        // Updated to api.mekari.com
-        // 2. Fetch Messages from Qontak
-        let msgsRes = await fetch(`https://api.mekari.com/v1/qontak/chat/rooms/${roomId}/messages?limit=${limit}`, {
+        // 2. Fetch Messages from Qontak (Endpoint: /rooms/{id}/histories)
+        // Correct endpoint per Qontak API spec v1.0.3
+        let msgsRes = await fetch(`https://api.mekari.com/v1/qontak/chat/rooms/${roomId}/histories?limit=${limit}`, {
             headers: { "Authorization": `Bearer ${qontakToken}` },
         });
 
@@ -67,12 +66,11 @@ Deno.serve(async (req) => {
         if (!msgsRes.ok) {
             console.warn(`Mekari API failed (${msgsRes.status}), trying Legacy API...`);
             // Fallback to Legacy API
-            msgsRes = await fetch(`https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/messages?limit=${limit}`, {
+            msgsRes = await fetch(`https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/histories?limit=${limit}`, {
                 headers: { "Authorization": `Bearer ${qontakToken}` },
             });
             rawText = await msgsRes.text();
 
-            // Check if Legacy also failed
             if (!msgsRes.ok) {
                 console.error("Legacy API Error:", rawText);
                 return new Response(JSON.stringify({
@@ -83,28 +81,6 @@ Deno.serve(async (req) => {
                     status: msgsRes.status,
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
-            }
-        } else {
-            // Mekari was OK, but let's check if it verified empty
-            try {
-                const tempCheck = JSON.parse(rawText || "{}");
-                if (!tempCheck.data || tempCheck.data.length === 0) {
-                    console.warn("Mekari returned empty messages. Checking Legacy just in case...");
-                    const legRes = await fetch(`https://service-chat.qontak.com/api/open/v1/rooms/${roomId}/messages?limit=${limit}`, {
-                        headers: { "Authorization": `Bearer ${qontakToken}` },
-                    });
-                    if (legRes.ok) {
-                        const legText = await legRes.text();
-                        const legJson = JSON.parse(legText || "{}");
-                        if (legJson.data && legJson.data.length > 0) {
-                            console.log("Legacy has data! Using Legacy response.");
-                            msgsRes = legRes;
-                            rawText = legText;
-                        }
-                    }
-                }
-            } catch (e) {
-                // Ignore parsing error here, handled below
             }
         }
 
