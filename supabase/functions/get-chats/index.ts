@@ -1,4 +1,4 @@
-import { generateMekariHeaders } from "../_shared/mekari-auth.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -15,17 +15,39 @@ Deno.serve(async (req) => {
         const { page = 1, limit = 20 } = await req.json().catch(() => ({}));
         const offset = (page - 1) * limit;
 
-        const mekariPath = `/v1/qontak/chat/rooms?page=${page}&limit=${limit}&offset=${offset}`;
-        const mekariHeaders = await generateMekariHeaders("GET", mekariPath);
+        // Get Bearer token from app_settings
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-        console.log("Fetching rooms from Mekari API (HMAC Auth)...");
-        const roomsRes = await fetch(`https://api.mekari.com${mekariPath}`, {
-            headers: mekariHeaders,
-        });
+        const { data: settings } = await supabase
+            .from("app_settings")
+            .select("key, value")
+            .in("key", ["qontak_token"]);
+
+        const token = settings?.find((s: any) => s.key === "qontak_token")?.value;
+
+        if (!token) {
+            return new Response(JSON.stringify({ error: "Qontak token not configured" }), {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        const headers = {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+        };
+
+        console.log("Fetching rooms with Bearer token...");
+        const roomsRes = await fetch(
+            `https://service-chat.qontak.com/api/open/v1/rooms?limit=${limit}&offset=${offset}`,
+            { headers }
+        );
 
         if (!roomsRes.ok) {
             const errText = await roomsRes.text();
-            console.error(`Mekari API failed (${roomsRes.status}): ${errText.substring(0, 300)}`);
+            console.error(`Qontak API failed (${roomsRes.status}): ${errText.substring(0, 300)}`);
             return new Response(JSON.stringify({ error: "Failed to fetch chats", details: errText }), {
                 status: roomsRes.status,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -34,7 +56,6 @@ Deno.serve(async (req) => {
 
         const roomsData = await roomsRes.json();
 
-        // Normalize Data
         const normalizeChannel = (rawChannel: string): string => {
             const ch = rawChannel?.toLowerCase() || "";
             if (ch.includes("wa") || ch.includes("whatsapp")) return "whatsapp";
@@ -58,7 +79,7 @@ Deno.serve(async (req) => {
             assigned_pic: room.agent?.full_name || null
         }));
 
-        console.log(`Fetched ${rooms.length} rooms (HMAC Auth)`);
+        console.log(`Fetched ${rooms.length} rooms (Bearer Token)`);
 
         return new Response(JSON.stringify({ data: rooms, meta: roomsData.meta }), {
             status: 200,
